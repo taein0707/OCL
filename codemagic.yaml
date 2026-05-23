@@ -46,17 +46,38 @@ workflows:
 
       - name: Verify iOS structure
         script: |
-          ls ios
-          ls ios/App
+          echo "ROOT"
+          ls -la
+
+          echo "IOS"
+          ls -la ios || true
+
+          echo "IOS APP"
+          ls -la ios/App || true
+
+          echo "PODFILES"
+          find . -name Podfile
+
+          echo "WORKSPACES"
+          find . -name "*.xcworkspace"
 
       - name: Install CocoaPods
         script: |
-          cd ios/App
+          POD_DIR=$(find ios -name Podfile -exec dirname {} \; | head -1)
+
+          echo "POD_DIR=$POD_DIR"
+
+          cd "$POD_DIR"
+
           pod install
 
       - name: Build unsigned app
         script: |
-          cd ios/App
+          WORKSPACE_DIR=$(find ios -name "*.xcworkspace" -exec dirname {} \; | head -1)
+
+          echo "WORKSPACE_DIR=$WORKSPACE_DIR"
+
+          cd "$WORKSPACE_DIR"
 
           xcodebuild \
             -workspace App.xcworkspace \
@@ -73,7 +94,7 @@ workflows:
 
           APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" | head -1)
 
-          echo $APP_PATH
+          echo "APP_PATH=$APP_PATH"
 
           cp -R "$APP_PATH" Payload/
 
