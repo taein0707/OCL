@@ -1,7 +1,7 @@
 workflows:
   ios-capacitor-workflow:
     name: OCL iOS Build
-    max_build_duration: 60
+
     instance_type: mac_mini_m1
 
     environment:
@@ -9,43 +9,57 @@ workflows:
       xcode: latest
       cocoapods: default
 
-    triggering:
-      events:
-        - push
-
     scripts:
-      - name: Install npm dependencies
+      - name: Node version
+        script: |
+          node -v
+          npm -v
+
+      - name: Install dependencies
         script: |
           npm install
 
-      - name: Build Vite project
+      - name: Capacitor doctor
+        script: |
+          npx cap doctor
+
+      - name: Build web app
         script: |
           npm run build
 
-      - name: Clean broken iOS folder (important)
+      - name: Delete ios folder
         script: |
           rm -rf ios
 
-      - name: Create fresh iOS platform on macOS
+      - name: Create iOS platform
         script: |
-          npx cap add ios
+          npx cap add ios || exit 1
 
       - name: Sync Capacitor
         script: |
-          npx cap sync ios
+          npx cap sync ios || exit 1
+
+      - name: Show iOS structure
+        script: |
+          echo "ROOT:"
+          ls
+
+          echo "IOS:"
+          ls ios
+
+          echo "IOS APP:"
+          ls ios/App
+
+      - name: Find Podfile
+        script: |
+          find . -name Podfile
 
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install
 
-      - name: Verify workspace exists
-        script: |
-          ls
-          ls ios
-          ls ios/App
-
-      - name: Build unsigned iOS app
+      - name: Build unsigned app
         script: |
           cd ios/App
 
@@ -58,11 +72,13 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Package IPA manually
+      - name: Create IPA
         script: |
-          mkdir -p Payload
+          mkdir Payload
 
           APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" | head -1)
+
+          echo $APP_PATH
 
           cp -R "$APP_PATH" Payload/
 
