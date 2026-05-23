@@ -15,12 +15,11 @@ workflows:
       - name: Build web assets
         script: |
           npm run build
-      - name: Capacitor Sync
+      - name: Re-create iOS Platform on Mac
         script: |
+          rm -rf ios
+          npx cap add ios
           npx cap sync ios
-      - name: Install Cocoapods (Create App.xcworkspace)
-        script: |
-          cd ios/App && pod install
       - name: Build iOS App
         script: |
           cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -allowProvisioningUpdates -sdk iphoneos CODE_SIGNING_ALLOWED=NO build
