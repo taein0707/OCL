@@ -10,7 +10,7 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Node version
+      - name: Show versions
         script: |
           node -v
           npm -v
@@ -19,40 +19,35 @@ workflows:
         script: |
           npm install
 
+      - name: Build Vite app
+        script: |
+          npm run build
+
+      - name: Verify dist exists
+        script: |
+          ls
+          ls dist
+
       - name: Capacitor doctor
         script: |
           npx cap doctor
 
-      - name: Build web app
-        script: |
-          npm run build
-
-      - name: Delete ios folder
+      - name: Remove old ios
         script: |
           rm -rf ios
 
-      - name: Create iOS platform
+      - name: Add iOS platform
         script: |
-          npx cap add ios || exit 1
+          npx cap add ios
 
       - name: Sync Capacitor
         script: |
-          npx cap sync ios || exit 1
+          npx cap sync ios
 
-      - name: Show iOS structure
+      - name: Verify iOS structure
         script: |
-          echo "ROOT:"
-          ls
-
-          echo "IOS:"
           ls ios
-
-          echo "IOS APP:"
           ls ios/App
-
-      - name: Find Podfile
-        script: |
-          find . -name Podfile
 
       - name: Install CocoaPods
         script: |
@@ -72,7 +67,7 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Create IPA
+      - name: Package IPA
         script: |
           mkdir Payload
 
