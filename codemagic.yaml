@@ -48,17 +48,9 @@ workflows:
           echo "IOS TREE"
           find ios
 
-      - name: Verify Podfile
+      - name: Verify project files
         script: |
-          find ios -name Podfile
-
-      - name: Install CocoaPods
-        script: |
-          cd ios/App
-          pod install --repo-update
-
-      - name: Verify workspace
-        script: |
+          find ios -name "*.xcodeproj"
           find ios -name "*.xcworkspace"
 
       - name: Build unsigned app
@@ -66,7 +58,7 @@ workflows:
           cd ios/App
 
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
             -sdk iphoneos \
