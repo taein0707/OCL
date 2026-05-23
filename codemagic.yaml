@@ -10,74 +10,47 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Show versions
-        script: |
-          node -v
-          npm -v
-
       - name: Install dependencies
         script: |
           npm install
 
-      - name: Build Vite app
+      - name: Build web app
         script: |
           npm run build
 
-      - name: Verify dist exists
+      - name: Verify dist
         script: |
-          ls
           ls dist
-
-      - name: Capacitor doctor
-        script: |
-          npx cap doctor
 
       - name: Remove old ios
         script: |
           rm -rf ios
 
+      - name: Initialize Capacitor
+        script: |
+          npx cap init OCL com.ocl.app --web-dir=dist
+
       - name: Add iOS platform
         script: |
-          npx cap add ios
+          npx cap add ios --verbose
 
-      - name: Sync Capacitor
+      - name: Show generated structure
         script: |
-          npx cap sync ios
+          find ios
 
-      - name: Verify iOS structure
+      - name: Install Pods manually
         script: |
-          echo "ROOT"
-          ls -la
+          cd ios/App
 
-          echo "IOS"
-          ls -la ios || true
+          pod install --repo-update
 
-          echo "IOS APP"
-          ls -la ios/App || true
-
-          echo "PODFILES"
-          find . -name Podfile
-
-          echo "WORKSPACES"
-          find . -name "*.xcworkspace"
-
-      - name: Install CocoaPods
+      - name: Verify workspace
         script: |
-          POD_DIR=$(find ios -name Podfile -exec dirname {} \; | head -1)
+          find ios -name "*.xcworkspace"
 
-          echo "POD_DIR=$POD_DIR"
-
-          cd "$POD_DIR"
-
-          pod install
-
-      - name: Build unsigned app
+      - name: Build app
         script: |
-          WORKSPACE_DIR=$(find ios -name "*.xcworkspace" -exec dirname {} \; | head -1)
-
-          echo "WORKSPACE_DIR=$WORKSPACE_DIR"
-
-          cd "$WORKSPACE_DIR"
+          cd ios/App
 
           xcodebuild \
             -workspace App.xcworkspace \
@@ -88,13 +61,11 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Package IPA
+      - name: Create IPA
         script: |
           mkdir Payload
 
           APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" | head -1)
-
-          echo "APP_PATH=$APP_PATH"
 
           cp -R "$APP_PATH" Payload/
 
