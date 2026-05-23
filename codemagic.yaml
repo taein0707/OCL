@@ -10,6 +10,11 @@ workflows:
       cocoapods: default
 
     scripts:
+      - name: Show versions
+        script: |
+          node -v
+          npm -v
+
       - name: Install dependencies
         script: |
           npm install
@@ -18,11 +23,12 @@ workflows:
         script: |
           npm run build
 
-      - name: Verify dist
+      - name: Verify dist exists
         script: |
+          ls
           ls dist
 
-      - name: Remove old ios
+      - name: Remove old ios folder
         script: |
           rm -rf ios
 
@@ -32,13 +38,25 @@ workflows:
 
       - name: Add iOS platform
         script: |
-          npx cap add ios --verbose
+          npx cap add ios
 
-      - name: Show generated structure
+      - name: Sync Capacitor
         script: |
+          npx cap sync ios
+
+      - name: Show generated iOS structure
+        script: |
+          echo "ROOT"
+          ls -la
+
+          echo "IOS TREE"
           find ios
 
-      - name: Install Pods manually
+      - name: Verify Podfile
+        script: |
+          find ios -name Podfile
+
+      - name: Install CocoaPods
         script: |
           cd ios/App
 
@@ -48,7 +66,7 @@ workflows:
         script: |
           find ios -name "*.xcworkspace"
 
-      - name: Build app
+      - name: Build unsigned app
         script: |
           cd ios/App
 
@@ -61,11 +79,13 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Create IPA
+      - name: Package IPA
         script: |
-          mkdir Payload
+          mkdir -p Payload
 
           APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" | head -1)
+
+          echo "APP_PATH=$APP_PATH"
 
           cp -R "$APP_PATH" Payload/
 
