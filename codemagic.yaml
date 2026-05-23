@@ -32,10 +32,6 @@ workflows:
         script: |
           rm -rf ios
 
-      - name: Initialize Capacitor
-        script: |
-          npx cap init OCL com.ocl.app --web-dir=dist
-
       - name: Add iOS platform
         script: |
           npx cap add ios
