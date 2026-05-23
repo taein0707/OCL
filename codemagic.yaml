@@ -59,7 +59,6 @@ workflows:
       - name: Install CocoaPods
         script: |
           cd ios/App
-
           pod install --repo-update
 
       - name: Verify workspace
