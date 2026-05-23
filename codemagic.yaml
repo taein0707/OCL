@@ -20,7 +20,8 @@ workflows:
           npx cap sync ios
       - name: Build iOS App
         script: |
-          cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -allowProvisioningUpdates build
+          cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -allowProvisioningUpdates -sdk iphoneos CODE_SIGNING_ALLOWED=NO build
     artifacts:
       - ios/App/build/Release-iphoneos/*.ipa
+      - ios/App/build/Debug-iphoneos/*.ipa
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
