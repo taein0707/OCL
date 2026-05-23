@@ -3,27 +3,70 @@ workflows:
     name: OCL iOS Build
     max_build_duration: 60
     instance_type: mac_mini_m1
+
     environment:
       node: latest
+      xcode: latest
+      cocoapods: default
+
     triggering:
       events:
         - push
+
     scripts:
-      - name: Install dependencies
+      - name: Install npm dependencies
         script: |
           npm install
-      - name: Build web assets
+
+      - name: Build Vite project
         script: |
           npm run build
-      - name: Re-create iOS Platform on Mac
+
+      - name: Clean broken iOS folder (important)
         script: |
           rm -rf ios
-          npx cap add ios
-          npx cap sync ios
-      - name: Build iOS App
+
+      - name: Create fresh iOS platform on macOS
         script: |
-          cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -allowProvisioningUpdates -sdk iphoneos CODE_SIGNING_ALLOWED=NO build
+          npx cap add ios
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync ios
+
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+
+      - name: Verify workspace exists
+        script: |
+          ls
+          ls ios
+          ls ios/App
+
+      - name: Build unsigned iOS app
+        script: |
+          cd ios/App
+
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination generic/platform=iOS \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package IPA manually
+        script: |
+          mkdir -p Payload
+
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" | head -1)
+
+          cp -R "$APP_PATH" Payload/
+
+          zip -r OCL.ipa Payload
+
     artifacts:
-      - ios/App/build/Release-iphoneos/*.ipa
-      - ios/App/build/Debug-iphoneos/*.ipa
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
+      - OCL.ipa
