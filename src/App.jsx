@@ -1,33 +1,32 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-
 import { AuthProvider } from './context/AuthContext.jsx'
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
-import AuthLayout from './layouts/AuthLayout.jsx'
-import GuestRoute from './components/GuestRoute.jsx'
-import ProtectedRoute from './components/ProtectedRoute.jsx'
-import MainLayout from './layouts/MainLayout.jsx'
+import PermissionFlowGate from './components/PermissionFlowGate.jsx'
 
 import LoadingPage from './pages/auth/LoadingPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import SignupFlowPage from './pages/auth/SignupFlowPage.jsx'
 
+import MainLayout from './layouts/MainLayout.jsx'
 import HomePage from './pages/main/HomePage.jsx'
 import ClassPage from './pages/main/ClassPage.jsx'
 import CreatePage from './pages/main/CreatePage.jsx'
 import SearchPage from './pages/main/SearchPage.jsx'
 import MyPage from './pages/main/MyPage.jsx'
 import SettingsPage from './pages/main/SettingsPage.jsx'
-import ProfilePage from './pages/main/ProfilePage.jsx'
+import ProfilePage from './pages/profile/ProfilePage.jsx'
+
+import GuestRoute from './routes/GuestRoute.jsx'
+import ProtectedRoute from './routes/ProtectedRoute.jsx'
+import AuthLayout from './layouts/AuthLayout.jsx'
 
 function App() {
   return (
-    <AppSettingsProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <AppSettingsProvider>
         <HashRouter>
 
-          {/* ❗ 여기 핵심: 무조건 렌더 보장 */}
           <PermissionFlowGate />
 
           <Routes>
@@ -76,8 +75,8 @@ function App() {
           </Routes>
 
         </HashRouter>
-      </AuthProvider>
-    </AppSettingsProvider>
+      </AppSettingsProvider>
+    </AuthProvider>
   )
 }
 
