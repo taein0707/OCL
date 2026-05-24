@@ -4,20 +4,23 @@ import { useAuth } from '../../context/AuthContext.jsx'
 
 function LoadingPage() {
   const navigate = useNavigate()
-  const auth = useAuth()
+  const { loading, isAuthenticated, onboardingComplete } = useAuth()
 
   useEffect(() => {
-    if (!auth) return
+    if (loading) return
 
-    if (auth.loading) return
-
-    if (!auth.isAuthenticated) {
+    if (!isAuthenticated) {
       navigate('/login', { replace: true })
       return
     }
 
+    if (!onboardingComplete) {
+      navigate('/auth/signup', { replace: true })
+      return
+    }
+
     navigate('/home', { replace: true })
-  }, [auth, navigate])
+  }, [loading, isAuthenticated, onboardingComplete, navigate])
 
   return (
     <div style={{
@@ -25,7 +28,7 @@ function LoadingPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#F6F6F6'
+      background: '#F6F6F6',
     }}>
       Loading...
     </div>

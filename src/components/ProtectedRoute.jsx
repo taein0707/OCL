@@ -26,7 +26,7 @@ function ProtectedRoute({ children, requireOnboarding = true }) {
   }
 
   if (requireOnboarding && !onboardingComplete) {
-    return <Navigate to="/onboarding" replace />
+    return <Navigate to="/auth/signup" replace />
   }
 
   return children
