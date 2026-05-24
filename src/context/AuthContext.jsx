@@ -1,275 +1,233 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  OAuthProvider,
-  signOut,
-  fetchSignInMethodsForEmail,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updateEmail,
-  updatePassword,
-} from 'firebase/auth'
-import { auth } from '../firebase/index.js'
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from 'react'
+
+import { useAuth } from './AuthContext.jsx'
+
 import {
-  getUserProfile,
-  ensureUserProfile,
-  saveUserProfile,
-  uploadUserProfilePhoto,
-  removeUserProfilePhoto,
-} from '../services/userProfile.js'
-import { DEFAULT_APP_SETTINGS } from '../constants/appSettings.js'
+  DEFAULT_APP_SETTINGS,
+  FONT_SIZE_CLASS,
+  ANIMATION_CLASS,
+  BUTTON_COLOR_OPTIONS,
+  LEGACY_BUTTON_COLOR_MAP,
+  ensureRequiredTabs,
+  TAB_DEFINITIONS,
+} from '../constants/appSettings.js'
 
-const AuthContext = createContext(null)
+const AppSettingsContext = createContext(null)
 
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+const DEFAULT_ACCENT =
+  BUTTON_COLOR_OPTIONS[BUTTON_COLOR_OPTIONS.length - 1]
+
+// ---------------------- utils ----------------------
+
+function hexToRgb(hex) {
+  const value = hex.replace('#', '')
+  const normalized =
+    value.length === 3
+      ? value.split('').map((c) => `${c}${c}`).join('')
+      : value
+  const num = Number.parseInt(normalized, 16)
+
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  }
+}
+
+function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b]
+    .map((v) =>
+      Math.max(0, Math.min(255, Math.round(v)))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`
+}
+
+function mixHex(hex, amount, target) {
+  const source = hexToRgb(hex)
+  const destination =
+    target === 'white'
+      ? { r: 255, g: 255, b: 255 }
+      : { r: 0, g: 0, b: 0 }
+
+  return rgbToHex({
+    r: source.r + (destination.r - source.r) * amount,
+    g: source.g + (destination.g - source.g) * amount,
+    b: source.b + (destination.b - source.b) * amount,
+  })
+}
+
+function getRelativeLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex)
+
+  const values = [r, g, b].map((c) => {
+    const n = c / 255
+    return n <= 0.03928
+      ? n / 12.92
+      : ((n + 0.055) / 1.055) ** 2.4
+  })
+
+  return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2]
+}
+
+function getContrastColor(hex) {
+  return getRelativeLuminance(hex) > 0.45
+    ? '#111111'
+    : '#ffffff'
+}
+
+function normalizeButtonColor(buttonColor) {
+  if (BUTTON_COLOR_OPTIONS.some((o) => o.id === buttonColor))
+    return buttonColor
+
+  return LEGACY_BUTTON_COLOR_MAP[buttonColor]
+    || DEFAULT_APP_SETTINGS.buttonColor
+}
+
+function resolveAccent(buttonColor) {
+  const normalized = normalizeButtonColor(buttonColor)
+  return (
+    BUTTON_COLOR_OPTIONS.find((o) => o.id === normalized)
+    || DEFAULT_ACCENT
+  )
+}
+
+function clampTabOrder(settings) {
+  const order = [...settings.tabOrder]
+
+  Object.entries(TAB_DEFINITIONS).forEach(([tabId, tab]) => {
+    if (typeof tab.fixedIndex !== 'number') return
+
+    const idx = order.indexOf(tabId)
+    if (idx >= 0) order.splice(idx, 1)
+
+    order.splice(Math.min(tab.fixedIndex, order.length), 0, tabId)
+  })
+
+  return { ...settings, tabOrder: order }
+}
+
+function applyRootSettings(settings, accent) {
+  if (typeof document === 'undefined') return
+
+  const root = document.documentElement
+
+  root.classList.remove(
+    'font-size-small',
+    'font-size-medium',
+    'font-size-large',
+    'dark',
+    'motion-strong',
+    'motion-reduce',
+  )
+
+  const fs = FONT_SIZE_CLASS[settings.fontSize]
+  if (fs) root.classList.add(fs)
+
+  if (settings.theme === 'dark') root.classList.add('dark')
+
+  const anim = ANIMATION_CLASS[settings.animationLevel]
+  if (anim) root.classList.add(anim)
+
+  root.style.setProperty('--accent', accent.hex)
+  root.style.setProperty('--accent-foreground', accent.foreground)
+  root.style.setProperty('--accent-hover', accent.hover)
+  root.style.setProperty('--accent-soft', accent.soft)
+  root.style.setProperty('--accent-ring', accent.ring)
+  root.style.setProperty('--accent-shadow', accent.shadow)
+}
+
+// ---------------------- context ----------------------
+
+export function useAppSettings() {
+  const ctx = useContext(AppSettingsContext)
+  if (!ctx)
+    throw new Error('useAppSettings must be used within AppSettingsProvider')
   return ctx
 }
 
-function toEmail(id) {
-  return `${id}@ocl-lounge.app`
-}
+// ---------------------- provider ----------------------
 
-function buildFallbackProfile(user) {
-  return {
-    id: user.email?.split('@')[0]?.slice(0, 20) || user.uid.slice(0, 8),
-    appSettings: { ...DEFAULT_APP_SETTINGS },
-    profilePhoto: null,
-  }
-}
+export function AppSettingsProvider({ children }) {
+  const { profile } = useAuth()
 
-function getPrimaryProvider(user) {
-  return user?.providerData?.[0]?.providerId || 'password'
-}
+  // 🔥 핵심: profile null 방어
+  const safeProfile = profile || { appSettings: {} }
 
-export function AuthProvider({ children }) {
-  const [firebaseUser, setFirebaseUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [profileStatus, setProfileStatus] = useState('idle')
-  const [recoveryMessage, setRecoveryMessage] = useState('')
+  const [livePatch, setLivePatch] = useState({})
 
-  const bootstrapProfile = useCallback(async (user) => {
-    try {
-      setProfileStatus('loading')
-      let nextProfile = await getUserProfile(user.uid)
-      if (!nextProfile) {
-        await ensureUserProfile(user.uid, buildFallbackProfile(user))
-        nextProfile = await getUserProfile(user.uid)
-      }
-      if (nextProfile && !nextProfile.id) {
-        const fallbackProfile = buildFallbackProfile(user)
-        await saveUserProfile(user.uid, { id: fallbackProfile.id })
-        nextProfile = { ...nextProfile, id: fallbackProfile.id }
-      }
-      if (!nextProfile) throw new Error('프로필을 불러오지 못했습니다.')
-      setProfile(nextProfile)
-      setProfileStatus('ready')
-      setRecoveryMessage('')
-      return nextProfile
-    } catch (error) {
-      setProfile(null)
-      setProfileStatus('recovery')
-      setRecoveryMessage('세션을 다시 확인했어요. 로그인 후 이어서 진행해 주세요.')
-      return null
+  const settings = useMemo(() => {
+    const merged = ensureRequiredTabs({
+      ...DEFAULT_APP_SETTINGS,
+      ...(safeProfile.appSettings || {}),
+      ...livePatch,
+    })
+
+    return {
+      ...merged,
+      buttonColor: normalizeButtonColor(merged.buttonColor),
     }
+  }, [safeProfile.appSettings, livePatch])
+
+  const accent = useMemo(() => {
+    const option = resolveAccent(settings.buttonColor)
+
+    const foreground = getContrastColor(option.hex)
+    const hover = mixHex(
+      option.hex,
+      foreground === '#ffffff' ? 0.12 : 0.08,
+      foreground === '#ffffff' ? 'black' : 'white',
+    )
+
+    const soft = mixHex(option.hex, 0.84, 'white')
+    const ring = mixHex(option.hex, 0.72, 'white')
+    const shadow = mixHex(
+      option.hex,
+      foreground === '#ffffff' ? 0.42 : 0.22,
+      'black',
+    )
+
+    return {
+      ...option,
+      foreground,
+      hover,
+      soft,
+      ring,
+      shadow,
+    }
+  }, [settings.buttonColor])
+
+  const patchSettings = useCallback((partial) => {
+    setLivePatch((prev) =>
+      clampTabOrder(ensureRequiredTabs({ ...prev, ...partial })),
+    )
   }, [])
 
-  const refreshProfile = useCallback(
-    async (uid = firebaseUser?.uid) => {
-      if (!uid) {
-        setProfile(null)
-        setProfileStatus('guest')
-        return null
-      }
-      const user = firebaseUser?.uid === uid ? firebaseUser : auth.currentUser
-      if (!user) {
-        setProfile(null)
-        setProfileStatus('recovery')
-        return null
-      }
-      return bootstrapProfile(user)
-    },
-    [bootstrapProfile, firebaseUser],
+  const resetLivePatch = useCallback(() => setLivePatch({}), [])
+
+  useLayoutEffect(() => {
+    applyRootSettings(settings, accent)
+  }, [settings, accent])
+
+  return (
+    <AppSettingsContext.Provider
+      value={{
+        settings,
+        accent,
+        patchSettings,
+        resetLivePatch,
+        normalizeButtonColor,
+      }}
+    >
+      {children}
+    </AppSettingsContext.Provider>
   )
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      setLoading(true)
-      setFirebaseUser(user)
-
-      try {
-        if (user) {
-          await bootstrapProfile(user)
-        } else {
-          setProfile(null)
-          setProfileStatus('guest')
-          setRecoveryMessage('')
-        }
-      } finally {
-        setLoading(false)
-      }
-    })
-    return unsub
-  }, [bootstrapProfile])
-
-  const loginWithEmail = async (id, pw) => {
-    const email = toEmail(id)
-    const cred = await signInWithEmailAndPassword(auth, email, pw)
-    const p = await bootstrapProfile(cred.user)
-    return { user: cred.user, profile: p }
-  }
-
-  const signupWithEmail = async (id, pw) => {
-    const email = toEmail(id)
-    const cred = await createUserWithEmailAndPassword(auth, email, pw)
-    await ensureUserProfile(cred.user.uid, { id })
-    const p = await bootstrapProfile(cred.user)
-    return { user: cred.user, profile: p }
-  }
-
-  const checkIdExists = async (id) => {
-    const email = toEmail(id)
-    const methods = await fetchSignInMethodsForEmail(auth, email).catch(() => [])
-    return methods.length > 0
-  }
-
-  const loginWithGoogle = async () => {
-    try {
-      const cred = await signInWithPopup(auth, new GoogleAuthProvider())
-      await ensureUserProfile(cred.user.uid, buildFallbackProfile(cred.user))
-      return bootstrapProfile(cred.user)
-    } catch (e) {
-      if (e.code === 'auth/popup-blocked') throw new Error('팝업이 차단됐어요. 브라우저 팝업 허용 후 다시 시도해 주세요.')
-      if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') throw new Error('로그인 창이 닫혔어요. 다시 시도해 주세요.')
-      if (e.code === 'auth/unauthorized-domain') throw new Error('이 도메인은 소셜 로그인이 허용되지 않아요. Firebase 콘솔 → Authentication → Settings → Authorized domains에 현재 도메인을 추가해 주세요.')
-      if (e.code === 'auth/operation-not-allowed') throw new Error('Google 로그인이 비활성화 상태예요. Firebase 콘솔 → Authentication → Sign-in method에서 Google을 활성화해 주세요.')
-      throw e
-    }
-  }
-
-  const loginWithApple = async () => {
-    try {
-      const cred = await signInWithPopup(auth, new OAuthProvider('apple.com'))
-      await ensureUserProfile(cred.user.uid, buildFallbackProfile(cred.user))
-      return bootstrapProfile(cred.user)
-    } catch (e) {
-      if (e.code === 'auth/popup-blocked') throw new Error('팝업이 차단됐어요. 브라우저 팝업 허용 후 다시 시도해 주세요.')
-      if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') throw new Error('로그인 창이 닫혔어요. 다시 시도해 주세요.')
-      if (e.code === 'auth/unauthorized-domain') throw new Error('이 도메인은 소셜 로그인이 허용되지 않아요. Firebase 콘솔 → Authorized domains 확인이 필요해요.')
-      if (e.code === 'auth/operation-not-allowed') throw new Error('Apple 로그인이 비활성화 상태예요. Firebase 콘솔 → Authentication → Sign-in method에서 Apple을 설정해 주세요.')
-      throw e
-    }
-  }
-
-  const logout = async () => {
-    setProfileStatus('guest')
-    setProfile(null)
-    await signOut(auth)
-  }
-
-  const requireSession = () => {
-    if (!firebaseUser) throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
-    return firebaseUser
-  }
-
-  const updateProfile = async (data) => {
-    const user = requireSession()
-    await saveUserProfile(user.uid, data)
-    return refreshProfile(user.uid)
-  }
-
-  const updateProfilePhoto = async (file) => {
-    const user = requireSession()
-    const currentPhoto = profile?.profilePhoto || null
-    await uploadUserProfilePhoto(user.uid, file, currentPhoto)
-    return refreshProfile(user.uid)
-  }
-
-  const clearProfilePhoto = async () => {
-    const user = requireSession()
-    const currentPhoto = profile?.profilePhoto || null
-    await removeUserProfilePhoto(user.uid, currentPhoto)
-    return refreshProfile(user.uid)
-  }
-
-  const updateLoginId = async (currentPassword, nextId) => {
-    const user = requireSession()
-    const normalizedId = nextId.trim()
-    if (!normalizedId) throw new Error('아이디를 입력해 주세요.')
-
-    const nextEmail = toEmail(normalizedId)
-    const currentEmail = user.email
-
-    if (!currentEmail) throw new Error('이 계정은 아이디 기반 로그인을 사용하지 않습니다.')
-    if (currentEmail === nextEmail) return refreshProfile(user.uid)
-
-    const methods = await fetchSignInMethodsForEmail(auth, nextEmail).catch(() => [])
-    if (methods.length > 0) throw new Error('이미 사용 중인 아이디입니다.')
-    if (!currentPassword) throw new Error('현재 비밀번호를 입력해 주세요.')
-
-    const credential = EmailAuthProvider.credential(currentEmail, currentPassword)
-    await reauthenticateWithCredential(user, credential)
-    await updateEmail(user, nextEmail)
-    await saveUserProfile(user.uid, { id: normalizedId })
-    return refreshProfile(user.uid)
-  }
-
-  const changePasswordWithCurrent = async (currentPassword, nextPassword) => {
-    const user = requireSession()
-    const currentEmail = user.email
-    if (!currentEmail) throw new Error('이 계정은 비밀번호를 직접 변경할 수 없습니다.')
-    if (!currentPassword) throw new Error('현재 비밀번호를 입력해 주세요.')
-    if (!nextPassword || nextPassword.length < 6) throw new Error('새 비밀번호는 6자 이상이어야 합니다.')
-
-    const credential = EmailAuthProvider.credential(currentEmail, currentPassword)
-    await reauthenticateWithCredential(user, credential)
-    await updatePassword(user, nextPassword)
-  }
-
-  const completeOnboarding = async (data) => {
-    const user = requireSession()
-    await saveUserProfile(user.uid, {
-      ...data,
-      onboardingComplete: true,
-    })
-    return refreshProfile(user.uid)
-  }
-
-  const authProviderType = getPrimaryProvider(firebaseUser)
-  const canChangePassword = authProviderType === 'password'
-
-  const value = {
-    firebaseUser,
-    profile,
-    loading,
-    profileStatus,
-    recoveryMessage,
-    authProviderType,
-    canChangePassword,
-    isAuthenticated: Boolean(firebaseUser),
-    hasResolvedProfile: profileStatus === 'ready',
-    needsRecovery: profileStatus === 'recovery',
-    onboardingComplete: profileStatus === 'ready' ? Boolean(profile?.onboardingComplete) : false,
-    checkIdExists,
-    loginWithEmail,
-    signupWithEmail,
-    loginWithGoogle,
-    loginWithApple,
-    logout,
-    updateProfile,
-    updateProfilePhoto,
-    clearProfilePhoto,
-    updateLoginId,
-    changePasswordWithCurrent,
-    completeOnboarding,
-    refreshProfile,
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
