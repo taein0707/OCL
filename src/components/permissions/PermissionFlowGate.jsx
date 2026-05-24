@@ -11,15 +11,6 @@ import {
 import { isNative } from '../../utils/platform.js'
 import PrePermissionSheet from './PrePermissionSheet.jsx'
 
-/**
- * 앱 최초 실행 시 1회만 동작하는 권한 안내 게이트.
- *  순서:
- *   1. 알림 권한 안내 → 허용 시 시스템 팝업
- *   2. 사진 라이브러리 접근 권한 안내 → 허용 시 시스템 팝업
- *   3. 끝나면 first-run 완료 플래그 저장
- *
- *  카메라 / 위치는 여기서 요청하지 않는다. (사용 시점 트리거)
- */
 const STEP = {
   IDLE: 'idle',
   NOTIFICATION: 'notification',
@@ -30,47 +21,62 @@ const STEP = {
 function PermissionFlowGate() {
   const [step, setStep] = useState(STEP.IDLE)
   const [loading, setLoading] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
     const init = async () => {
-      // 네이티브가 아니면 시스템 팝업이 의미 없으므로 게이트를 건너뛴다.
-      if (!isNative()) return
-      const done = await hasCompletedFirstRunPermissionFlow()
-      if (done || cancelled) return
+      try {
+        if (!isNative()) {
+          setReady(true)
+          return
+        }
 
-      const notif = await checkNotificationPermission()
-      if (cancelled) return
-      if (notif === PERMISSION_STATE.PROMPT) {
-        setStep(STEP.NOTIFICATION)
-        return
+        const done = await hasCompletedFirstRunPermissionFlow()
+        if (cancelled) return
+
+        if (done) {
+          setReady(true)
+          return
+        }
+
+        const notif = await checkNotificationPermission()
+        if (cancelled) return
+
+        if (notif === PERMISSION_STATE.PROMPT) {
+          setStep(STEP.NOTIFICATION)
+          return
+        }
+
+        const photos = await checkPhotosPermission()
+        if (cancelled) return
+
+        if (photos === PERMISSION_STATE.PROMPT) {
+          setStep(STEP.PHOTOS)
+          return
+        }
+
+        await markFirstRunPermissionFlowCompleted()
+        setReady(true)
+      } catch (e) {
+        // 🔥 절대 앱 막지 않음
+        console.warn('PermissionFlowGate error:', e)
+        setReady(true)
       }
-
-      const photos = await checkPhotosPermission()
-      if (cancelled) return
-      if (photos === PERMISSION_STATE.PROMPT) {
-        setStep(STEP.PHOTOS)
-        return
-      }
-
-      await markFirstRunPermissionFlowCompleted()
     }
 
-    void init()
+    init()
+
     return () => {
       cancelled = true
     }
   }, [])
 
-  const advanceAfterNotification = async () => {
-    const photos = await checkPhotosPermission()
-    if (photos === PERMISSION_STATE.PROMPT) {
-      setStep(STEP.PHOTOS)
-    } else {
-      await markFirstRunPermissionFlowCompleted()
-      setStep(STEP.DONE)
-    }
+  const finish = async () => {
+    await markFirstRunPermissionFlowCompleted()
+    setStep(STEP.DONE)
+    setReady(true)
   }
 
   const handleAllowNotification = async () => {
@@ -80,11 +86,11 @@ function PermissionFlowGate() {
     } finally {
       setLoading(false)
     }
-    await advanceAfterNotification()
+    await finish()
   }
 
   const handleSkipNotification = async () => {
-    await advanceAfterNotification()
+    await finish()
   }
 
   const handleAllowPhotos = async () => {
@@ -94,13 +100,11 @@ function PermissionFlowGate() {
     } finally {
       setLoading(false)
     }
-    await markFirstRunPermissionFlowCompleted()
-    setStep(STEP.DONE)
+    await finish()
   }
 
   const handleSkipPhotos = async () => {
-    await markFirstRunPermissionFlowCompleted()
-    setStep(STEP.DONE)
+    await finish()
   }
 
   return (
@@ -110,33 +114,37 @@ function PermissionFlowGate() {
         loading={loading}
         icon="🔔"
         title="알림을 켜고 싶은 순간을 놓치지 마세요"
-        description="허용하면 친구 요청, 댓글, 공감, 공지 알림을 바로 받아볼 수 있어요."
+        description="허용하면 친구 요청, 댓글, 공지 알림을 받을 수 있어요."
         bullets={[
-          '친구 요청을 바로 확인할 수 있어요',
-          '내 게시글에 달린 댓글·공감을 알려드려요',
-          '학교 공지·DM을 놓치지 않아요',
+          '친구 요청 확인',
+          '댓글·공감 알림',
+          '학교 공지 알림',
         ]}
         primaryLabel="알림 허용"
         secondaryLabel="나중에"
         onAllow={handleAllowNotification}
         onDismiss={handleSkipNotification}
       />
+
       <PrePermissionSheet
         open={step === STEP.PHOTOS}
         loading={loading}
         icon="🖼️"
         title="사진을 함께 올려볼까요?"
-        description="허용하면 스냅 / 프로필에 갤러리 사진을 첨부할 수 있어요."
+        description="허용하면 갤러리 사진을 사용할 수 있어요."
         bullets={[
-          '스냅에 갤러리 사진을 바로 첨부할 수 있어요',
-          '프로필 사진을 더 자유롭게 꾸밀 수 있어요',
-          '필요한 사진만 선택해서 사용해요',
+          '게시글 사진 첨부',
+          '프로필 사진 변경',
+          '갤러리 접근',
         ]}
-        primaryLabel="사진 접근 허용"
+        primaryLabel="사진 허용"
         secondaryLabel="나중에"
         onAllow={handleAllowPhotos}
         onDismiss={handleSkipPhotos}
       />
+
+      {/* 🔥 중요: 항상 앱이 진행되도록 보장 */}
+      {ready && step === STEP.DONE && null}
     </>
   )
 }
