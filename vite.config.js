@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  // capacitor:// 환경에서 /assets/... 절대경로가 깨질 수 있어 상대경로로 빌드
-  base: './',
   plugins: [react()],
+  base: './', // 🔥 필수: 모바일 앱(Capacitor) 빌드 시 상대 경로 지정을 위해 반드시 필요합니다.
   build: {
-    sourcemap: false,
-    target: 'es2018',
-  },
+    outDir: 'dist',
+    assetsDir: 'assets',
+  }
 })
