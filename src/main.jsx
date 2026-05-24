@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom/client'
 // 🚨 기존 BrowserRouter를 HashRouter로 교체합니다.
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import App from './App.jsx'
-import './index.css'
+// ★ 경로를 프로젝트에 맞게 './styles/index.css'로 올바르게 수정했습니다!
+import './styles/index.css'
 
 // 예시용 더미 컴포넌트 (실제 프로젝트의 컴포넌트로 대체하세요)
 // import Home from './pages/Home.jsx'
