@@ -19,7 +19,6 @@ import ProfilePage from './pages/main/ProfilePage.jsx'
 
 import GuestRoute from './components/GuestRoute.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
-import AuthLayout from './layouts/AuthLayout.jsx'
 
 function App() {
   return (
@@ -30,31 +29,31 @@ function App() {
           <PermissionFlowGate />
 
           <Routes>
+
             <Route path="/" element={<Navigate to="/loading" replace />} />
             <Route path="/loading" element={<LoadingPage />} />
 
+            {/* guest only */}
             <Route
               path="/login"
               element={
                 <GuestRoute>
-                  <AuthLayout>
-                    <LoginPage />
-                  </AuthLayout>
+                  <LoginPage />
                 </GuestRoute>
               }
             />
 
+            {/* signup */}
             <Route
               path="/auth/signup"
               element={
-                <ProtectedRoute requireOnboarding={false}>
-                  <AuthLayout>
-                    <SignupFlowPage />
-                  </AuthLayout>
-                </ProtectedRoute>
+                <GuestRoute>
+                  <SignupFlowPage />
+                </GuestRoute>
               }
             />
 
+            {/* protected area */}
             <Route
               element={
                 <ProtectedRoute>
@@ -72,6 +71,7 @@ function App() {
             </Route>
 
             <Route path="*" element={<Navigate to="/loading" replace />} />
+
           </Routes>
 
         </AppSettingsProvider>
