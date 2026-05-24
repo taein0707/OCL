@@ -1,53 +1,57 @@
+import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { useAppSettings } from '../context/AppSettingsContext.jsx'
-import { TAB_DEFINITIONS } from '../constants/appSettings.js'
-import { TAB_ICON_MAP } from './icons/TabIcons.jsx'
+import { useAppSettings } from '../context/AppSettingsContext'
+import { 
+  HomeIcon, 
+  SearchIcon, 
+  PlusCircleIcon, 
+  UserIcon, 
+  AcademicCapIcon 
+} from './icons/TabIcons'
+
+const TAB_ICON_MAP = {
+  HomeIcon: HomeIcon,
+  SearchIcon: SearchIcon,
+  PlusCircleIcon: PlusCircleIcon,
+  AcademicCapIcon: AcademicCapIcon,
+  UserIcon: UserIcon
+}
 
 function MainTabBar() {
   const { settings } = useAppSettings()
   const location = useLocation()
 
-  const tabs = settings.tabOrder
-    .filter((id) => settings.enabledTabs.includes(id))
-    .map((id) => ({ id, ...TAB_DEFINITIONS[id] }))
-    .filter(Boolean)
+  // 원래 정의되어 있던 탭 배열 데이터 (없을 때를 대비해 빈 배열 안전장치 추가)
+  const tabs = settings?.tabs || [
+    { id: 'home', label: '홈', path: '/', Icon: 'HomeIcon' },
+    { id: 'search', label: '검색', path: '/search', Icon: 'SearchIcon' },
+    { id: 'create', label: '글쓰기', path: '/create', Icon: 'PlusCircleIcon' },
+    { id: 'class', label: '클래스', path: '/class', Icon: 'AcademicCapIcon' },
+    { id: 'mypage', label: '마이페이지', path: '/mypage', Icon: 'UserIcon' }
+  ]
+
+  // 🚨 filter 시 undefined 크래시 방지용 안전장치 추가
+  const visibleTabs = tabs?.filter ? tabs.filter(tab => !tab.hidden) : tabs
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-50 w-full pb-[env(safe-area-inset-bottom)] md:hidden"
-      aria-label="하단 탭"
-    >
-      <div className="flex w-full items-center justify-around border-t border-mono-200/70 bg-white/[0.94] px-2 pt-2 pb-2 shadow-[0_-8px_24px_-16px_rgba(0,0,0,0.14)] backdrop-blur-md">
-        {tabs.map((tab) => {
-          const Icon = TAB_ICON_MAP[tab.Icon]
-          const isCenter = tab.center
+    <nav className="fixed inset-x-0 bottom-0 z-50 w-full pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="하단 탭">
+      <div className="flex w-full items-center justify-around border-t border-gray-200 bg-white/95 px-2 py-2 shadow-lg backdrop-blur-md">
+        {visibleTabs.map((tab) => {
+          const Icon = TAB_ICON_MAP[tab.Icon] || HomeIcon
           const isActive = location.pathname === tab.path
-
-          if (isCenter) {
-            return (
-              <NavLink
-                key={tab.id}
-                to={tab.path}
-                aria-label={tab.label}
-                className="flex flex-1 flex-col items-center justify-center py-1"
-              >
-                <span className={`tab-center-shell ${isActive ? 'tab-center-shell-active' : 'tab-center-shell-idle'}`}>
-                  <Icon className="h-6 w-6" />
-                </span>
-              </NavLink>
-            )
-          }
 
           return (
             <NavLink
               key={tab.id}
               to={tab.path}
-              aria-label={tab.label}
-              className={`flex min-h-[48px] flex-1 flex-col items-center justify-center rounded-2xl px-2 py-2 transition-all ${
-                isActive ? 'tab-pill-active' : 'tab-pill-idle'
-              }`}
+              className={({ isActive }) => 
+                `flex flex-1 flex-col items-center justify-center py-1 transition-all ${
+                  isActive ? 'text-blue-600 font-semibold' : 'text-gray-500'
+                }`
+              }
             >
               <Icon className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">{tab.label}</span>
             </NavLink>
           )
         })}
