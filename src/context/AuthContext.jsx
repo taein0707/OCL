@@ -7,8 +7,6 @@ import {
   useCallback,
 } from 'react'
 
-import { useAuth } from './AuthContext.jsx'
-
 import {
   DEFAULT_APP_SETTINGS,
   FONT_SIZE_CLASS,
@@ -24,7 +22,7 @@ const AppSettingsContext = createContext(null)
 const DEFAULT_ACCENT =
   BUTTON_COLOR_OPTIONS[BUTTON_COLOR_OPTIONS.length - 1]
 
-// ---------------------- utils ----------------------
+// ---------------- utils ----------------
 
 function hexToRgb(hex) {
   const value = hex.replace('#', '')
@@ -32,6 +30,7 @@ function hexToRgb(hex) {
     value.length === 3
       ? value.split('').map((c) => `${c}${c}`).join('')
       : value
+
   const num = Number.parseInt(normalized, 16)
 
   return {
@@ -94,6 +93,7 @@ function normalizeButtonColor(buttonColor) {
 
 function resolveAccent(buttonColor) {
   const normalized = normalizeButtonColor(buttonColor)
+
   return (
     BUTTON_COLOR_OPTIONS.find((o) => o.id === normalized)
     || DEFAULT_ACCENT
@@ -145,7 +145,7 @@ function applyRootSettings(settings, accent) {
   root.style.setProperty('--accent-shadow', accent.shadow)
 }
 
-// ---------------------- context ----------------------
+// ---------------- context ----------------
 
 export function useAppSettings() {
   const ctx = useContext(AppSettingsContext)
@@ -154,13 +154,13 @@ export function useAppSettings() {
   return ctx
 }
 
-// ---------------------- provider ----------------------
+// ---------------- provider ----------------
 
 export function AppSettingsProvider({ children }) {
-  const { profile } = useAuth()
+  // ❗ AuthContext 안전하게만 사용
+  const { profile } = useAuth() || {}
 
-  // 🔥 핵심: profile null 방어
-  const safeProfile = profile || { appSettings: {} }
+  const safeProfile = profile ?? { appSettings: {} }
 
   const [livePatch, setLivePatch] = useState({})
 
