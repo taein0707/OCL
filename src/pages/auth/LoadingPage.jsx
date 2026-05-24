@@ -24,6 +24,7 @@ function LoadingPage() {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#F6F6F6',
+      fontSize: 16,
     }}>
       로딩...
     </div>

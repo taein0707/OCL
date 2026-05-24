@@ -4,19 +4,19 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../firebase'
+
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from '../firebase/index.js'
 
 const AuthContext = createContext(null)
 
-export function useAuth() {
-  return useContext(AuthContext)
-}
+export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // 🔥 핵심: 로그인 상태만 단순하게 유지
   useEffect(() => {
     if (!auth) {
       setLoading(false)
@@ -31,24 +31,19 @@ export function AuthProvider({ children }) {
     return unsub
   }, [])
 
-  const loginWithEmail = (id, pw) => {
-    return signInWithEmailAndPassword(auth, `${id}@ocl-lounge.app`, pw)
+  const logout = async () => {
+    await signOut(auth)
   }
 
-  const logout = () => {
-    return signOut(auth)
+  const value = {
+    firebaseUser,
+    loading,
+    isAuthenticated: !!firebaseUser,
+    logout,
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        firebaseUser,
-        isAuthenticated: !!firebaseUser,
-        loading,
-        loginWithEmail,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

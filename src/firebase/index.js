@@ -4,11 +4,12 @@ import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAwz70YD9mgkrEEZFdv7YTAWqeqg7LXKO4",
-  authDomain: "smartnote-13b7b.firebaseapp.com",
-  projectId: "smartnote-13b7b",
-  storageBucket: "smartnote-13b7b.appspot.com",
-  appId: "1:81954195843:web:324c3e8d95eff8aca40eb6",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
