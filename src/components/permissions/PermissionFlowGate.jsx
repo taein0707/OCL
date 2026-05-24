@@ -1,3 +1,4 @@
+console.log('🔥 LOADING PAGE')
 import { useEffect, useState } from 'react'
 import {
   PERMISSION_STATE,

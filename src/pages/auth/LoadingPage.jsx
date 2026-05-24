@@ -1,3 +1,4 @@
+console.log('🔥 LOADING PAGE')
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
