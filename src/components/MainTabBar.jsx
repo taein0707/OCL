@@ -1,63 +1,84 @@
-import React from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { useAppSettings } from '../context/AppSettingsContext'
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { useAppSettings } from '../context/AppSettingsContext';
+// 🚨 실제 프로젝트 파일(TabIcons.jsx)에 선언되어 있는 순정 명칭들로 완벽하게 조립했습니다.
 import { 
   HomeIcon, 
   SearchIcon, 
-  PlusCircleIcon, 
-  UserIcon, 
-  AcademicCapIcon 
-} from './icons/TabIcons'
+  CreateIcon, 
+  ClassIcon, 
+  ProfileIcon // 🚨 실제 파일 내 정품 이름인 'ProfileIcon'을 정확하게 가져옵니다!
+} from './icons/TabIcons';
 
+// 시스템의 탭 데이터 구조(PlusCircleIcon, AcademicCapIcon, UserIcon 등)와 순정 아이콘 컴포넌트를 정확하게 매핑
 const TAB_ICON_MAP = {
-  HomeIcon: HomeIcon,
-  SearchIcon: SearchIcon,
-  PlusCircleIcon: PlusCircleIcon,
-  AcademicCapIcon: AcademicCapIcon,
-  UserIcon: UserIcon
-}
+  HomeIcon,
+  SearchIcon,
+  PlusCircleIcon: CreateIcon,
+  AcademicCapIcon: ClassIcon,
+  UserIcon: ProfileIcon, // 원래 탭 설정에서 'UserIcon'을 호출하면 실제 선언된 'ProfileIcon'이 나오도록 완벽 연동!
+};
 
 function MainTabBar() {
-  const { settings } = useAppSettings()
-  const location = useLocation()
+  const { settings } = useAppSettings();
 
-  // 원래 정의되어 있던 탭 배열 데이터 (없을 때를 대비해 빈 배열 안전장치 추가)
   const tabs = settings?.tabs || [
     { id: 'home', label: '홈', path: '/', Icon: 'HomeIcon' },
     { id: 'search', label: '검색', path: '/search', Icon: 'SearchIcon' },
     { id: 'create', label: '글쓰기', path: '/create', Icon: 'PlusCircleIcon' },
     { id: 'class', label: '클래스', path: '/class', Icon: 'AcademicCapIcon' },
-    { id: 'mypage', label: '마이페이지', path: '/mypage', Icon: 'UserIcon' }
-  ]
+    { id: 'mypage', label: '마이페이지', path: '/mypage', Icon: 'UserIcon' },
+  ];
 
-  // 🚨 filter 시 undefined 크래시 방지용 안전장치 추가
-  const visibleTabs = tabs?.filter ? tabs.filter(tab => !tab.hidden) : tabs
+  const visibleTabs = tabs.filter((tab) => !tab.hidden);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 w-full pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="하단 탭">
-      <div className="flex w-full items-center justify-around border-t border-gray-200 bg-white/95 px-2 py-2 shadow-lg backdrop-blur-md">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[720px] px-3 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-2 md:hidden"
+      aria-label="하단 탭"
+    >
+      <div className="mx-auto flex w-full max-w-[620px] items-end justify-between gap-1 rounded-[30px] border border-b-0 border-mono-200/70 bg-white/[0.92] p-2 shadow-[0_-12px_36px_-24px_rgba(0,0,0,0.22)] backdrop-blur-md md:max-w-[680px]">
         {visibleTabs.map((tab) => {
-          const Icon = TAB_ICON_MAP[tab.Icon] || HomeIcon
-          const isActive = location.pathname === tab.path
+          const Icon = TAB_ICON_MAP[tab.Icon];
+          const isCenter = tab.center;
+
+          if (isCenter) {
+            return (
+              <NavLink
+                key={tab.id}
+                to={tab.path}
+                className={({ isActive }) =>
+                  `flex w-[76px] -mt-6 flex-col items-center gap-1.5 rounded-[24px] pt-1 transition-all ${
+                    isActive ? 'text-ink font-semibold' : 'text-mono-500'
+                  }`
+                }
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-white shadow-md">
+                  {Icon && <Icon className="h-6 w-6" />}
+                </span>
+                <span className="text-[10px] font-semibold">{tab.label}</span>
+              </NavLink>
+            );
+          }
 
           return (
             <NavLink
               key={tab.id}
               to={tab.path}
-              className={({ isActive }) => 
-                `flex flex-1 flex-col items-center justify-center py-1 transition-all ${
-                  isActive ? 'text-blue-600 font-semibold' : 'text-gray-500'
+              className={({ isActive }) =>
+                `flex min-h-[70px] flex-1 flex-col items-center justify-center gap-1 rounded-[22px] px-2 pb-1 pt-2 transition-all ${
+                  isActive ? 'text-ink font-semibold bg-mono-50' : 'text-mono-500 hover:bg-mono-50/50'
                 }`
               }
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] mt-0.5">{tab.label}</span>
+              {Icon && <Icon className="h-5 w-5" />}
+              <span className="text-[10px] font-semibold tracking-tight">{tab.label}</span>
             </NavLink>
-          )
+          );
         })}
       </div>
     </nav>
-  )
+  );
 }
 
-export default MainTabBar
+export default MainTabBar;
