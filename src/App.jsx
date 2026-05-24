@@ -18,8 +18,8 @@ import SettingsPage from './pages/main/SettingsPage.jsx'
 
 import ProfilePage from './pages/main/ProfilePage.jsx'
 
-import GuestRoute from './routes/GuestRoute.jsx'
-import ProtectedRoute from './routes/ProtectedRoute.jsx'
+import GuestRoute from './components/GuestRoute.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AuthLayout from './layouts/AuthLayout.jsx'
 
 function App() {
