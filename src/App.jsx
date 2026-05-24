@@ -1,20 +1,47 @@
-<HashRouter>
-  <AuthProvider>
-    <AppSettingsProvider>
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-      <PermissionFlowGate />
+import { AuthProvider } from './context/AuthContext.jsx'
+import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
 
-      <Routes>
-        <Route path="/" element={<Navigate to="/loading" />} />
-        <Route path="/loading" element={<LoadingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
 
-        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-          <Route path="/home" element={<HomePage />} />
-        </Route>
+import LoadingPage from './pages/auth/LoadingPage.jsx'
+import LoginPage from './pages/auth/LoginPage.jsx'
 
-      </Routes>
+import MainLayout from './layouts/MainLayout.jsx'
+import HomePage from './pages/main/HomePage.jsx'
 
-    </AppSettingsProvider>
-  </AuthProvider>
-</HashRouter>
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+
+function App() {
+  return (
+    <HashRouter>
+      <AuthProvider>
+        <AppSettingsProvider>
+
+          <PermissionFlowGate />
+
+          <Routes>
+            <Route path="/" element={<Navigate to="/loading" replace />} />
+            <Route path="/loading" element={<LoadingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+
+            <Route
+              element={
+                <ProtectedRoute>
+                  <MainLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/home" element={<HomePage />} />
+            </Route>
+
+          </Routes>
+
+        </AppSettingsProvider>
+      </AuthProvider>
+    </HashRouter>
+  )
+}
+
+export default App
