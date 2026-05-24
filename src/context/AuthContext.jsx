@@ -7,6 +7,8 @@ import {
   useCallback,
 } from 'react'
 
+import { useAuth } from './AuthContext.jsx'
+
 import {
   DEFAULT_APP_SETTINGS,
   FONT_SIZE_CLASS,
@@ -157,8 +159,9 @@ export function useAppSettings() {
 // ---------------- provider ----------------
 
 export function AppSettingsProvider({ children }) {
-  // ❗ AuthContext 안전하게만 사용
-  const { profile } = useAuth() || {}
+  // ✅ 안전하게 auth 가져오기
+  const auth = useAuth?.()
+  const profile = auth?.profile
 
   const safeProfile = profile ?? { appSettings: {} }
 
