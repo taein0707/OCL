@@ -2,7 +2,7 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-import PermissionFlowGate from './components/PermissionFlowGate.jsx'
+import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
 
 import LoadingPage from './pages/auth/LoadingPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
@@ -23,9 +23,9 @@ import AuthLayout from './layouts/AuthLayout.jsx'
 
 function App() {
   return (
-    <AuthProvider>
-      <AppSettingsProvider>
-        <HashRouter>
+    <HashRouter>
+      <AuthProvider>
+        <AppSettingsProvider>
 
           <PermissionFlowGate />
 
@@ -74,9 +74,9 @@ function App() {
             <Route path="*" element={<Navigate to="/loading" replace />} />
           </Routes>
 
-        </HashRouter>
-      </AppSettingsProvider>
-    </AuthProvider>
+        </AppSettingsProvider>
+      </AuthProvider>
+    </HashRouter>
   )
 }
 
