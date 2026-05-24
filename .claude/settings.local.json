@@ -9,7 +9,10 @@
       "Bash(command -v msedge)",
       "Bash(npm ls *)",
       "Bash(node *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(npx cap *)"
     ]
   }
 }

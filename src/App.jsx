@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
+import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
 import AuthLayout from './layouts/AuthLayout.jsx'
 import GuestRoute from './components/GuestRoute.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -20,7 +21,8 @@ function App() {
   return (
     <AuthProvider>
       <AppSettingsProvider>
-        <BrowserRouter>
+        <HashRouter>
+          <PermissionFlowGate />
           <Routes>
             <Route path="/" element={<Navigate to="/loading" replace />} />
             <Route path="/loading" element={<LoadingPage />} />
@@ -67,7 +69,7 @@ function App() {
 
             <Route path="*" element={<Navigate to="/loading" replace />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </AppSettingsProvider>
     </AuthProvider>
   )

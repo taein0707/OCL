@@ -17,7 +17,7 @@ function MainTabBar() {
       className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[720px] px-3 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-2 md:hidden"
       aria-label="하단 탭"
     >
-      <div className="mx-auto flex w-full max-w-[620px] items-end justify-between gap-1 rounded-t-[30px] border border-b-0 border-mono-200 bg-white/[0.96] p-2 shadow-[0_-18px_40px_-28px_rgba(0,0,0,0.32)] backdrop-blur md:max-w-[680px]">
+      <div className="mx-auto flex w-full max-w-[620px] items-end justify-between gap-1 rounded-t-[30px] border border-b-0 border-mono-200/70 bg-white/[0.92] p-2 shadow-[0_-12px_36px_-24px_rgba(0,0,0,0.22)] backdrop-blur-md md:max-w-[680px]">
         {tabs.map((tab) => {
           const Icon = TAB_ICON_MAP[tab.Icon]
           const isCenter = tab.center

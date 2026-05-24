@@ -1,46 +1,111 @@
 import { toYmd } from '../utils/index.js'
+import { describeOffSchoolReason, isHoliday, isWeekend } from '../utils/koreanHolidays.js'
 import { fetchMealInfo, fetchTimetableInfo } from './neis.js'
 
-const timetableMap = {
-  1: ['국어', '수학', '영어', '사회', '체육', '창체'],
-  2: ['영어', '수학', '과학', '국어', '미술', '창체'],
-  3: ['수학', '국어', '영어', '한국사', '체육', '자율'],
-}
-
-export async function getMealForSchool(profile, targetDate = new Date()) {
-  const schoolName = profile?.school?.name || '우리 학교'
+/**
+ * "오늘 학교를 가는 날인가?" 판정 + 급식/시간표 데이터를 한 번에 반환한다.
+ *
+ * 반환:
+ * {
+ *   schoolDay: boolean,           // 학교 가는 날 여부 (false 면 UI 는 "학교 가지 않는 날" 카드 표시)
+ *   reason:    'school' | 'weekend' | 'holiday' | 'no-data' | 'error' | 'no-school-profile',
+ *   reasonLabel: string | null,   // '일요일' / '부처님오신날' / null 등 사용자에게 보여줄 라벨
+ *   date:      string,            // YYYYMMDD
+ *   schoolName: string,
+ *   meal:      { menu: string[], available: boolean },
+ *   timetable: { rows: {period, subject}[], available: boolean },
+ *   errored:   boolean,           // 네트워크/HTTP/키 오류 등 호출 자체 실패
+ * }
+ */
+export async function getSchoolDayInfo(profile, targetDate = new Date()) {
   const date = toYmd(targetDate)
-  const liveMenu = await fetchMealInfo(profile?.school, date)
-
-  if (liveMenu.length) {
-    return { date, schoolName, menu: liveMenu, source: 'neis' }
-  }
-
-  return { date, schoolName, menu: [], source: 'no-data' }
-}
-
-export async function getTimetableForSchool(profile, targetDate = new Date()) {
+  const schoolName = profile?.school?.name || '우리 학교'
+  const hasSchoolProfile = Boolean(profile?.school?.eduCode && profile?.school?.id)
   const grade = Number(profile?.grade || 1)
   const classNum = Number(profile?.classNum || 1)
-  const date = toYmd(targetDate)
-  const liveRows = await fetchTimetableInfo(profile?.school, grade, classNum, date)
 
-  if (liveRows.length) {
-    return liveRows.map((row, index) => ({
-      period: row.period || `${index + 1}교시`,
-      subject: row.subject,
-      room: `${grade}${String(classNum).padStart(2, '0')}-${index + 1}`,
-      source: 'neis',
-    }))
+  // 1) 달력 기반 판정 (주말/공휴일)
+  if (isHoliday(targetDate) || isWeekend(targetDate)) {
+    return {
+      schoolDay: false,
+      reason: isHoliday(targetDate) ? 'holiday' : 'weekend',
+      reasonLabel: describeOffSchoolReason(targetDate),
+      date,
+      schoolName,
+      meal: { menu: [], available: false },
+      timetable: { rows: [], available: false },
+      errored: false,
+    }
   }
 
-  const subjects = timetableMap[grade] || timetableMap[1]
-  return ['1교시', '2교시', '3교시', '4교시', '5교시', '6교시'].map((period, index) => ({
-    period,
-    subject: subjects[(index + classNum - 1) % subjects.length],
-    room: `${grade}${String(classNum).padStart(2, '0')}-${index + 1}`,
-    source: 'fallback',
-  }))
+  // 2) 학교 등록이 안 된 사용자 → 데이터 호출 자체가 불가능
+  if (!hasSchoolProfile) {
+    return {
+      schoolDay: false,
+      reason: 'no-school-profile',
+      reasonLabel: null,
+      date,
+      schoolName,
+      meal: { menu: [], available: false },
+      timetable: { rows: [], available: false },
+      errored: false,
+    }
+  }
+
+  // 3) NEIS 동시 호출
+  const [mealResult, timetableResult] = await Promise.all([
+    fetchMealInfo(profile.school, date),
+    fetchTimetableInfo(profile.school, grade, classNum, date),
+  ])
+
+  const mealAvailable = mealResult.menu.length > 0
+  const timetableAvailable = timetableResult.rows.length > 0
+  const anyDataAvailable = mealAvailable || timetableAvailable
+  const callFailed = !mealResult.ok && !timetableResult.ok
+
+  if (callFailed) {
+    return {
+      schoolDay: false,
+      reason: 'error',
+      reasonLabel: null,
+      date,
+      schoolName,
+      meal: { menu: [], available: false },
+      timetable: { rows: [], available: false },
+      errored: true,
+    }
+  }
+
+  // 4) 평일 + API 정상 + 데이터 0건 → 재량휴업·시험·방학 등 학교 안 가는 날로 간주
+  if (!anyDataAvailable) {
+    return {
+      schoolDay: false,
+      reason: 'no-data',
+      reasonLabel: null,
+      date,
+      schoolName,
+      meal: { menu: [], available: false },
+      timetable: { rows: [], available: false },
+      errored: false,
+    }
+  }
+
+  return {
+    schoolDay: true,
+    reason: 'school',
+    reasonLabel: null,
+    date,
+    schoolName,
+    meal: { menu: mealResult.menu, available: mealAvailable },
+    timetable: {
+      rows: timetableResult.rows.map((row, index) => ({
+        period: row.period || `${index + 1}교시`,
+        subject: row.subject,
+      })),
+      available: timetableAvailable,
+    },
+    errored: false,
+  }
 }
 
 export function getSchoolSummary(profile) {

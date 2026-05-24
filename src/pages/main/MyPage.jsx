@@ -72,7 +72,7 @@ function MyPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5 animate-[slideUpFade_0.3s_ease-out]">
+    <div className="flex flex-col gap-6 animate-[slideUpFade_0.3s_ease-out] sm:gap-7">
       <input
         ref={fileInputRef}
         type="file"
@@ -169,12 +169,12 @@ function MyPage() {
           </div>
         </div>
       ) : profile?.intro ? (
-        <div className="neo-card flex items-center justify-between gap-3 px-5 py-4">
-          <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-mono-600">{profile.intro}</p>
+        <div className="neo-card flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5">
+          <p className="line-clamp-2 text-[13px] font-medium leading-[1.7] text-mono-600">{profile.intro}</p>
           <button
             type="button"
             onClick={() => { setBioText(profile.intro || ''); setBioEditing(true) }}
-            className="shrink-0 text-xs font-black text-mono-400 transition hover:text-ink"
+            className="shrink-0 text-[11.5px] font-black text-mono-400 transition hover:text-ink"
           >
             수정
           </button>
@@ -214,7 +214,7 @@ function MyPage() {
 
       {tab === 'posts' && (
         sortedPosts.length === 0 ? (
-          <div className="neo-card p-6 text-sm font-semibold text-mono-500">작성한 게시글이 없습니다.</div>
+          <div className="neo-card px-6 py-8 text-center text-[13px] font-medium text-mono-500">작성한 게시글이 없습니다.</div>
         ) : (
           <ProfilePostList posts={sortedPosts} showAnonymousBadge />
         )
@@ -222,14 +222,14 @@ function MyPage() {
 
       {tab === 'notifications' && (
         approvalNotifications.length === 0 ? (
-          <div className="neo-card p-6 text-center text-sm font-semibold text-mono-500">
+          <div className="neo-card px-6 py-8 text-center text-[13px] font-medium text-mono-500">
             새로운 알림이 없습니다.
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {approvalNotifications.map((item) => (
-              <div key={item.id} className="neo-card flex flex-col gap-3 px-4 py-3">
-                <p className="text-sm font-semibold text-ink">
+              <div key={item.id} className="neo-card flex flex-col gap-3 px-4 py-4 sm:px-5">
+                <p className="text-[13px] font-medium leading-[1.65] text-ink">
                   {item.requesterNickname}님이 친구로 연결됐어요. 허용하시겠습니까?
                 </p>
                 <div className="flex flex-wrap gap-2">
