@@ -1,35 +1,16 @@
-import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext.jsx'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
-function ProtectedRoute({ children, requireOnboarding = true }) {
-  const { loading, isAuthenticated, onboardingComplete, profileStatus } = useAuth()
-  const location = useLocation()
+export default function ProtectedRoute({ children }) {
+  const { firebaseUser, loading } = useAuth()
 
-  if (loading || (isAuthenticated && profileStatus === 'loading')) {
-    return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-transparent">
-        <div className="h-10 w-10 rounded-full border-[3px] border-mono-300 border-t-[var(--accent)] animate-spin" />
-      </div>
-    )
+  if (loading) {
+    return <div /> // 💥 iOS 흰 화면 방지 핵심
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />
-  }
-
-  if (profileStatus === 'recovery') {
-    return <Navigate to="/loading" replace />
-  }
-
-  if (profileStatus !== 'ready') {
-    return <Navigate to="/loading" replace />
-  }
-
-  if (requireOnboarding && !onboardingComplete) {
-    return <Navigate to="/auth/signup" replace />
+  if (!firebaseUser) {
+    return <Navigate to="/login" replace />
   }
 
   return children
 }
-
-export default ProtectedRoute

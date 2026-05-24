@@ -1,11 +1,24 @@
-import { createContext, useContext, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useMemo,
+} from 'react'
+import { useAuth } from './AuthContext'
 
 const AppSettingsContext = createContext(null)
 
-export const useAppSettings = () => useContext(AppSettingsContext)
+export function useAppSettings() {
+  return useContext(AppSettingsContext)
+}
 
 export function AppSettingsProvider({ children }) {
-  const [settings] = useState({})
+  const auth = useAuth() || {}
+  const profile = auth.firebaseUser ? {} : null
+
+  const settings = useMemo(() => ({
+    theme: 'light',
+    accent: '#111',
+  }), [])
 
   return (
     <AppSettingsContext.Provider value={{ settings }}>

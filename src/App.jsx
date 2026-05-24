@@ -1,17 +1,15 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-import { AuthProvider } from './context/AuthContext.jsx'
-import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
+import { AuthProvider } from './context/AuthContext'
+import { AppSettingsProvider } from './context/AppSettingsContext'
 
-import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
+import ProtectedRoute from './routes/ProtectedRoute'
 
-import LoadingPage from './pages/auth/LoadingPage.jsx'
-import LoginPage from './pages/auth/LoginPage.jsx'
+import LoginPage from './pages/auth/LoginPage'
+import LoadingPage from './pages/auth/LoadingPage'
+import MainLayout from './layouts/MainLayout'
 
-import MainLayout from './layouts/MainLayout.jsx'
-import HomePage from './pages/main/HomePage.jsx'
-
-import ProtectedRoute from './components/ProtectedRoute.jsx'
+import HomePage from './pages/main/HomePage'
 
 function App() {
   return (
@@ -19,22 +17,22 @@ function App() {
       <AuthProvider>
         <AppSettingsProvider>
 
-          <PermissionFlowGate />
-
           <Routes>
-            <Route path="/" element={<Navigate to="/loading" replace />} />
+
+            <Route path="/" element={<Navigate to="/loading" />} />
             <Route path="/loading" element={<LoadingPage />} />
             <Route path="/login" element={<LoginPage />} />
 
             <Route
+              path="/home"
               element={
                 <ProtectedRoute>
-                  <MainLayout />
+                  <MainLayout>
+                    <HomePage />
+                  </MainLayout>
                 </ProtectedRoute>
               }
-            >
-              <Route path="/home" element={<HomePage />} />
-            </Route>
+            />
 
           </Routes>
 
