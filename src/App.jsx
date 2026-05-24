@@ -1,14 +1,16 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
-import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
+
 import AuthLayout from './layouts/AuthLayout.jsx'
 import GuestRoute from './components/GuestRoute.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
+
 import LoadingPage from './pages/auth/LoadingPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import SignupFlowPage from './pages/auth/SignupFlowPage.jsx'
+
 import HomePage from './pages/main/HomePage.jsx'
 import ClassPage from './pages/main/ClassPage.jsx'
 import CreatePage from './pages/main/CreatePage.jsx'
@@ -21,10 +23,17 @@ function App() {
   return (
     <AuthProvider>
       <AppSettingsProvider>
+
+        {/* ⚠️ iOS 흰 화면 디버깅 단계: 일단 게이트 제거 */}
+        {/* <PermissionFlowGate /> */}
+
         <HashRouter>
-          <PermissionFlowGate />
           <Routes>
+
+            {/* root redirect */}
             <Route path="/" element={<Navigate to="/loading" replace />} />
+
+            {/* auth */}
             <Route path="/loading" element={<LoadingPage />} />
 
             <Route
@@ -51,6 +60,7 @@ function App() {
 
             <Route path="/onboarding" element={<Navigate to="/auth/signup" replace />} />
 
+            {/* main */}
             <Route
               element={
                 <ProtectedRoute>
@@ -67,9 +77,12 @@ function App() {
               <Route path="/users/:userId" element={<ProfilePage />} />
             </Route>
 
+            {/* fallback */}
             <Route path="*" element={<Navigate to="/loading" replace />} />
+
           </Routes>
         </HashRouter>
+
       </AppSettingsProvider>
     </AuthProvider>
   )
