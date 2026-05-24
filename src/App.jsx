@@ -1,9 +1,9 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+
 import { AuthProvider } from './context/AuthContext.jsx'
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
 
 import PermissionFlowGate from './components/permissions/PermissionFlowGate.jsx'
-
 import AuthLayout from './layouts/AuthLayout.jsx'
 import GuestRoute from './components/GuestRoute.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -23,11 +23,11 @@ import ProfilePage from './pages/main/ProfilePage.jsx'
 
 function App() {
   return (
-    <AuthProvider>
-      <AppSettingsProvider>
+    <AppSettingsProvider>
+      <AuthProvider>
         <HashRouter>
 
-          {/* 🔥 일단 유지 (하지만 안전화되어 있어야 함) */}
+          {/* ❗ 여기 핵심: 무조건 렌더 보장 */}
           <PermissionFlowGate />
 
           <Routes>
@@ -56,8 +56,6 @@ function App() {
               }
             />
 
-            <Route path="/onboarding" element={<Navigate to="/auth/signup" replace />} />
-
             <Route
               element={
                 <ProtectedRoute>
@@ -78,8 +76,8 @@ function App() {
           </Routes>
 
         </HashRouter>
-      </AppSettingsProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </AppSettingsProvider>
   )
 }
 

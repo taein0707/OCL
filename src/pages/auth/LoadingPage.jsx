@@ -1,33 +1,20 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext.jsx'
+import { useEffect, useState } from 'react'
+import PrePermissionSheet from './PrePermissionSheet.jsx'
+import { isNative } from '../../utils/platform.js'
 
-function LoadingPage() {
-  const navigate = useNavigate()
-  const { loading, isAuthenticated } = useAuth()
-
-  useEffect(() => {
-    if (loading) return
-
-    if (!isAuthenticated) {
-      navigate('/login', { replace: true })
-      return
-    }
-
-    navigate('/home', { replace: true })
-  }, [loading, isAuthenticated, navigate])
-
-  return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#F6F6F6'
-    }}>
-      Loading...
-    </div>
-  )
+const STEP = {
+  DONE: 'done',
 }
 
-export default LoadingPage
+function PermissionFlowGate() {
+  const [step] = useState(STEP.DONE)
+
+  useEffect(() => {
+    // ❗ 무조건 즉시 종료 (UI 절대 막지 않음)
+    return
+  }, [])
+
+  return null
+}
+
+export default PermissionFlowGate
