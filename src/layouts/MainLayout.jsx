@@ -5,7 +5,7 @@ import DesktopSidebar from '../components/DesktopSidebar.jsx'
 
 function MainLayout() {
   return (
-    <div className="min-h-[100svh] bg-transparent pb-[112px] text-ink sm:min-h-[100dvh] md:pb-0">
+    <div className="min-h-[100svh] bg-transparent pb-[72px] text-ink sm:min-h-[100dvh] md:pb-0">
       <div className="mx-auto flex w-full max-w-[1200px] items-start gap-5 px-3 py-3 sm:px-6 sm:py-6 xl:gap-7">
         <DesktopSidebar />
 

@@ -14,10 +14,10 @@ function MainTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[720px] px-3 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-2 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 w-full pb-[env(safe-area-inset-bottom)] md:hidden"
       aria-label="하단 탭"
     >
-      <div className="mx-auto flex w-full max-w-[620px] items-end justify-between gap-1 rounded-t-[30px] border border-b-0 border-mono-200/70 bg-white/[0.92] p-2 shadow-[0_-12px_36px_-24px_rgba(0,0,0,0.22)] backdrop-blur-md md:max-w-[680px]">
+      <div className="flex w-full items-center justify-around border-t border-mono-200/70 bg-white/[0.94] px-2 pt-2 pb-2 shadow-[0_-8px_24px_-16px_rgba(0,0,0,0.14)] backdrop-blur-md">
         {tabs.map((tab) => {
           const Icon = TAB_ICON_MAP[tab.Icon]
           const isCenter = tab.center
@@ -29,13 +29,10 @@ function MainTabBar() {
                 key={tab.id}
                 to={tab.path}
                 aria-label={tab.label}
-                className="flex w-[76px] -mt-6 flex-col items-center gap-1.5 rounded-[24px] pt-1"
+                className="flex flex-1 flex-col items-center justify-center py-1"
               >
                 <span className={`tab-center-shell ${isActive ? 'tab-center-shell-active' : 'tab-center-shell-idle'}`}>
                   <Icon className="h-6 w-6" />
-                </span>
-                <span className={`text-[10px] font-semibold ${isActive ? 'text-ink' : 'text-mono-500'}`}>
-                  {tab.label}
                 </span>
               </NavLink>
             )
@@ -46,12 +43,11 @@ function MainTabBar() {
               key={tab.id}
               to={tab.path}
               aria-label={tab.label}
-              className={`flex min-h-[70px] flex-1 flex-col items-center justify-center gap-1 rounded-[22px] px-2 pb-1 pt-2 transition-all ${
+              className={`flex min-h-[48px] flex-1 flex-col items-center justify-center rounded-2xl px-2 py-2 transition-all ${
                 isActive ? 'tab-pill-active' : 'tab-pill-idle'
               }`}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-semibold tracking-tight">{tab.label}</span>
             </NavLink>
           )
         })}
