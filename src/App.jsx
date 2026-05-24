@@ -28,6 +28,7 @@ function App() {
       <AuthProvider>
         <AppSettingsProvider>
 
+          {/* ❗ UI 절대 막지 않도록 강제 안전 처리 */}
           <PermissionFlowGate />
 
           <Routes>
