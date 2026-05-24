@@ -7,7 +7,7 @@ import {
   SearchIcon, 
   CreateIcon, 
   ClassIcon, 
-  ProfileIcon // 🚨 실제 파일 내 정품 이름인 'ProfileIcon'을 정확하게 가져옵니다!
+  UserIcon // 🚨 롤업 빌더 검증 결과, 실제 내보내기 이름은 'UserIcon'이 맞습니다!
 } from './icons/TabIcons';
 
 // 시스템의 탭 데이터 구조(PlusCircleIcon, AcademicCapIcon, UserIcon 등)와 순정 아이콘 컴포넌트를 정확하게 매핑
@@ -16,7 +16,7 @@ const TAB_ICON_MAP = {
   SearchIcon,
   PlusCircleIcon: CreateIcon,
   AcademicCapIcon: ClassIcon,
-  UserIcon: ProfileIcon, // 원래 탭 설정에서 'UserIcon'을 호출하면 실제 선언된 'ProfileIcon'이 나오도록 완벽 연동!
+  UserIcon: UserIcon, // 원래 탭 설정에서 'UserIcon'을 호출하면 순정 'UserIcon'이 나오도록 완벽 매핑
 };
 
 function MainTabBar() {

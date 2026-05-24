@@ -8,7 +8,7 @@ import {
   SearchIcon, 
   CreateIcon, 
   ClassIcon, 
-  ProfileIcon // 🚨 실제 파일 내 정품 이름인 'ProfileIcon'을 정확하게 가져옵니다!
+  UserIcon // 🚨 롤업 빌더 검증 결과, 실제 내보내기 이름은 'UserIcon'이 맞습니다!
 } from './icons/TabIcons';
 
 const TAB_ICON_MAP = {
@@ -16,7 +16,7 @@ const TAB_ICON_MAP = {
   SearchIcon,
   PlusCircleIcon: CreateIcon,
   AcademicCapIcon: ClassIcon,
-  UserIcon: ProfileIcon,
+  UserIcon: UserIcon,
 };
 
 function DesktopSidebar() {
