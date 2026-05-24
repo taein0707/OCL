@@ -2,11 +2,13 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    {/* 모바일 꽉 찬 화면을 위해 가로폭과 viewport-fit 유지 */}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>OCL Lounge Web</title>
   </head>
   <body class="bg-gray-100 text-black select-none">
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    {/* 🚨 핵심 수정: 앞에 점(.)을 추가하여 아이폰 내에서 상대 경로로 정상 인식하게 만듭니다. */}
+    <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>
