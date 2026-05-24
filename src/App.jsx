@@ -16,7 +16,7 @@ import SearchPage from './pages/main/SearchPage.jsx'
 import MyPage from './pages/main/MyPage.jsx'
 import SettingsPage from './pages/main/SettingsPage.jsx'
 
-import ProfilePage from './pages/main/ProfilePage.jsx' // ✅ 여기 수정됨
+import ProfilePage from './pages/main/ProfilePage.jsx'
 
 import GuestRoute from './routes/GuestRoute.jsx'
 import ProtectedRoute from './routes/ProtectedRoute.jsx'
