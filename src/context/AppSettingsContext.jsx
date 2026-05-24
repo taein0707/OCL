@@ -110,7 +110,14 @@ export function useAppSettings() {
 }
 
 export function AppSettingsProvider({ children }) {
-  const { profile } = useAuth()
+  // ✅ SAFE: useAuth optional (prevents crash during bootstrap)
+  let profile = null
+  try {
+    profile = useAuth()?.profile
+  } catch (e) {
+    profile = null
+  }
+
   const [livePatch, setLivePatch] = useState({})
 
   const settings = useMemo(() => {
@@ -160,5 +167,9 @@ export function AppSettingsProvider({ children }) {
     normalizeButtonColor,
   }
 
-  return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>
+  return (
+    <AppSettingsContext.Provider value={value}>
+      {children}
+    </AppSettingsContext.Provider>
+  )
 }
