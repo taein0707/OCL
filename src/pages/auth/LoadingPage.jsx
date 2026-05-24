@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 
 function LoadingPage() {
   const navigate = useNavigate()
-  const { loading, isAuthenticated, onboardingComplete } = useAuth()
+  const { loading, isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (loading) return
@@ -14,13 +14,8 @@ function LoadingPage() {
       return
     }
 
-    if (!onboardingComplete) {
-      navigate('/auth/signup', { replace: true })
-      return
-    }
-
     navigate('/home', { replace: true })
-  }, [loading, isAuthenticated, onboardingComplete, navigate])
+  }, [loading, isAuthenticated, navigate])
 
   return (
     <div style={{
@@ -30,7 +25,7 @@ function LoadingPage() {
       justifyContent: 'center',
       background: '#F6F6F6',
     }}>
-      Loading...
+      로딩...
     </div>
   )
 }
