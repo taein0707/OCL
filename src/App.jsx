@@ -15,7 +15,6 @@ import CreatePage from './pages/main/CreatePage.jsx'
 import SearchPage from './pages/main/SearchPage.jsx'
 import MyPage from './pages/main/MyPage.jsx'
 import SettingsPage from './pages/main/SettingsPage.jsx'
-
 import ProfilePage from './pages/main/ProfilePage.jsx'
 
 import GuestRoute from './components/GuestRoute.jsx'
@@ -28,7 +27,6 @@ function App() {
       <AuthProvider>
         <AppSettingsProvider>
 
-          {/* ❗ UI 절대 막지 않도록 강제 안전 처리 */}
           <PermissionFlowGate />
 
           <Routes>
