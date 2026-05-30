@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, collection } from 'firebase/firestore';
 import { getStorage, ref } from 'firebase/storage';
+import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -26,10 +27,11 @@ if (isConfigValid) {
     const isFirstInit = getApps().length === 0;
     app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
 
-    // initializeAuth with custom persistence is required for Capacitor iOS session retention.
-    // Must use isFirstInit (captured before initializeApp) — after initializeApp,
-    // getApps().length is always >= 1, making a live check always fall to the else branch.
-    if (isFirstInit) {
+    // initializeAuth with custom persistence is only needed on Capacitor native (iOS/Android)
+    // to prevent session loss. On web (Vercel/browser) getAuth() uses browserLocalPersistence
+    // by default and initializeAuth with indexedDB options throws auth/argument-error.
+    const isNative = Capacitor.isNativePlatform();
+    if (isFirstInit && isNative) {
       auth = initializeAuth(app, {
         persistence: [indexedDBLocalPersistence, browserLocalPersistence],
       });
