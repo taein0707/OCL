@@ -75,15 +75,18 @@ export function isOnboardingDone(profile) {
   return Boolean(profile.onboardingComplete)
 }
 
-export async function reportPost({ reporterUid, reportedUid, reportedNickname, school, postId, reason }) {
+export async function reportPost({ reporterUid, reportedUid, reportedNickname, school, postId, reason, detail = '' }) {
   if (!db) return
-  await addDoc(collection(db, 'declaration'), {
+  await addDoc(collection(db, 'reports'), {
+    targetId: postId || '',
+    targetType: '게시글',
     reporterUid: reporterUid || '',
     reportedUid: reportedUid || '',
     reportedNickname: reportedNickname || '',
     school: school ? { id: String(school.id || ''), name: String(school.name || '') } : null,
-    postId: postId || '',
     reason: reason || '',
+    detail: detail || '',
+    status: 'pending',
     createdAt: serverTimestamp(),
   })
 }

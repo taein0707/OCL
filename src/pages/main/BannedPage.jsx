@@ -1,5 +1,23 @@
+import { useAuth } from '../../context/AuthContext.jsx'
+
 function BannedPage({ type = 'permanent' }) {
+  const { profile, logout } = useAuth()
   const isPermanent = type === 'permanent'
+
+  const suspendedUntil = profile?.suspendedUntil?.toDate?.()
+  const formattedDate = suspendedUntil
+    ? suspendedUntil.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
+
+  const handleLogout = async () => {
+    await logout()
+  }
 
   return (
     <div className="flex min-h-[100svh] items-center justify-center bg-mono-100 px-4 py-10">
@@ -36,7 +54,14 @@ function BannedPage({ type = 'permanent' }) {
 
         {!isPermanent && (
           <div className="w-full rounded-2xl border border-mono-200 bg-mono-50 px-5 py-4 text-sm font-semibold text-mono-600">
-            정지 기간 정보가 여기에 표시됩니다.
+            {formattedDate ? (
+              <>
+                <p className="text-xs text-mono-400">정지 해제일</p>
+                <p className="mt-1 font-black text-ink">{formattedDate}</p>
+              </>
+            ) : (
+              '정지 기간 정보를 불러오는 중...'
+            )}
           </div>
         )}
 
@@ -47,6 +72,13 @@ function BannedPage({ type = 'permanent' }) {
             onClick={() => window.open('mailto:support@ocl-lounge.app', '_blank')}
           >
             고객센터 문의
+          </button>
+          <button
+            type="button"
+            className="w-full rounded-2xl py-3 text-sm font-semibold text-mono-400 hover:text-mono-600"
+            onClick={handleLogout}
+          >
+            로그아웃
           </button>
         </div>
       </div>
