@@ -15,7 +15,8 @@ import {
   updateEmail,
   updatePassword,
 } from 'firebase/auth'
-import { auth } from '../firebase/index.js'
+import { auth, db } from '../firebase/index.js'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { isNative, isIOS } from '../utils/platform.js'
 import {
   getUserProfile,
@@ -163,6 +164,27 @@ export function AuthProvider({ children }) {
     })
     return unsub
   }, [bootstrapProfile])
+
+  // Real-time listener on the user's Firestore document.
+  // Picks up admin-side changes (isBanned, suspendedUntil) without requiring
+  // a logout/login cycle. Runs only after initial profile load is complete.
+  useEffect(() => {
+    if (!db || !firebaseUser?.uid || profileStatus !== 'ready') return
+    const unsub = onSnapshot(
+      doc(db, 'users', firebaseUser.uid),
+      (snap) => {
+        if (!snap.exists()) return
+        const data = snap.data()
+        setProfile((prev) => {
+          if (!prev) return prev
+          return { ...prev, ...data, uid: firebaseUser.uid }
+        })
+        seedAuthor(firebaseUser.uid, { ...snap.data(), uid: firebaseUser.uid })
+      },
+      () => {},
+    )
+    return unsub
+  }, [firebaseUser?.uid, profileStatus])
 
   const requireSession = () => {
     if (!firebaseUser) throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
