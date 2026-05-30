@@ -169,12 +169,14 @@ export function AuthProvider({ children }) {
   }
 
   const loginWithEmail = async (id, pw) => {
+    if (!auth) throw new Error('Firebase가 초기화되지 않았습니다. 환경변수를 확인하세요.')
     const cred = await signInWithEmailAndPassword(auth, toEmail(id), pw)
     const p = await bootstrapProfile(cred.user)
     return { user: cred.user, profile: p }
   }
 
   const signupWithEmail = async (id, pw) => {
+    if (!auth) throw new Error('Firebase가 초기화되지 않았습니다. 환경변수를 확인하세요.')
     const cred = await createUserWithEmailAndPassword(auth, toEmail(id), pw)
     await ensureUserProfile(cred.user.uid, { id })
     const p = await bootstrapProfile(cred.user)
@@ -182,6 +184,7 @@ export function AuthProvider({ children }) {
   }
 
   const loginWithGoogle = async () => {
+    if (!auth) throw new Error('Firebase가 초기화되지 않았습니다. 환경변수를 확인하세요.')
     if (isNative()) {
       const { SocialLogin } = await import('@capgo/capacitor-social-login')
       try {
@@ -213,6 +216,7 @@ export function AuthProvider({ children }) {
   }
 
   const loginWithApple = async () => {
+    if (!auth) throw new Error('Firebase가 초기화되지 않았습니다. 환경변수를 확인하세요.')
     if (isNative() && isIOS()) {
       // iOS: native Apple Sign-In via @capgo/capacitor-social-login
       const { SocialLogin } = await import('@capgo/capacitor-social-login')
@@ -253,7 +257,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setProfileStatus('guest')
     setProfile(null)
-    await signOut(auth)
+    if (auth) await signOut(auth)
   }
 
   // updateProfile → Firestore 저장 후 재조회 (학교 등 중첩 객체 정확히 반영)

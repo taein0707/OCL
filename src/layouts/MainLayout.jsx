@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Logo from '../components/Logo.jsx'
 import MainTabBar from '../components/MainTabBar.jsx'
 import DesktopSidebar from '../components/DesktopSidebar.jsx'
+import PermissionFlowGate from '../components/permissions/PermissionFlowGate.jsx'
 
 function MainLayout() {
   const location = useLocation()
@@ -36,6 +37,7 @@ function MainLayout() {
       </div>
 
       <MainTabBar />
+      <PermissionFlowGate />
     </div>
   )
 }
