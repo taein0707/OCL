@@ -1,7 +1,7 @@
 import {
   collection, addDoc, getDocs, doc, getDoc, setDoc, deleteDoc,
   query, where, updateDoc, runTransaction, increment,
-  serverTimestamp, limit as fsLimit,
+  serverTimestamp, limit as fsLimit, onSnapshot,
 } from 'firebase/firestore'
 import { db } from '../firebase/index.js'
 import { getRegionFromAddress, getTimestampMillis } from '../utils/index.js'
@@ -415,6 +415,22 @@ export async function getPostById(postId) {
     console.warn('[community] getPostById failed:', err)
     return null
   }
+}
+
+// Returns an unsubscribe function. Calls onPost(post) on every update;
+// calls onPost(null) when the document is deleted.
+export function subscribeToPost(postId, onPost) {
+  if (!db || !postId) return () => {}
+  return onSnapshot(
+    doc(db, 'posts', postId),
+    (snap) => {
+      onPost(snap.exists() ? normalizePost(snap.data(), snap.id) : null)
+    },
+    (err) => {
+      console.warn('[community] subscribeToPost error:', err)
+      onPost(null)
+    },
+  )
 }
 
 export async function getComments(postId) {

@@ -39,20 +39,29 @@ function HomePage() {
 
   // Load posts only when uid / school / boards actually change
   const boardsKey = profile?.selectedBoards?.join(',') ?? ''
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
+
+  const loadPosts = useCallback(async () => {
+    const [p, s] = await Promise.all([
       getCommunityFlows(profileRef.current),
       getSchoolPosts(profileRef.current),
-    ]).then(([p, s]) => {
-      if (!cancelled) {
-        setPosts(p)
-        setSchoolPosts(s)
-      }
-    })
-    return () => { cancelled = true }
+    ])
+    setPosts(p)
+    setSchoolPosts(s)
+  }, [])
+
+  useEffect(() => {
+    loadPosts()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.uid, profile?.school?.id, boardsKey])
+
+  // Refresh when the tab / app becomes visible again (picks up admin deletions)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadPosts()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [loadPosts])
 
   // Reset active tab only if it's no longer in the tab list
   useEffect(() => {

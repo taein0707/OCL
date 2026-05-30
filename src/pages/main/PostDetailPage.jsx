@@ -6,7 +6,7 @@ import { formatTime } from '../../utils/index.js'
 import Toast from '../../components/Toast.jsx'
 import AuthorAvatar from '../../components/AuthorAvatar.jsx'
 import { useAuthorInfo } from '../../hooks/useAuthorName.js'
-import { getPostById, getComments, addComment, addReply } from '../../services/community.js'
+import { subscribeToPost, getComments, addComment, addReply } from '../../services/community.js'
 import { markPostSeen } from '../../services/feed.js'
 import { reportPost } from '../../services/userProfile.js'
 
@@ -240,15 +240,20 @@ function PostDetailPage() {
   const dotsRef = useRef(null)
 
   useEffect(() => {
-    let cancelled = false
-    Promise.all([getPostById(postId), getComments(postId)]).then(([p, c]) => {
-      if (cancelled) return
+    // Real-time subscription: navigates back immediately when admin deletes the post
+    const unsub = subscribeToPost(postId, (p) => {
+      if (p === null) {
+        // Post was deleted — show toast then go back
+        setToast('삭제된 게시글이에요.')
+        setTimeout(() => navigate(-1), 1500)
+        return
+      }
       setPost(p)
-      setComments(c)
-      if (p) markPostSeen(firebaseUser?.uid, postId)
+      markPostSeen(firebaseUser?.uid, postId)
     })
-    return () => { cancelled = true }
-  }, [postId, firebaseUser?.uid])
+    getComments(postId).then(setComments)
+    return unsub
+  }, [postId, firebaseUser?.uid, navigate])
 
   useEffect(() => {
     if (!showDotsMenu) return
