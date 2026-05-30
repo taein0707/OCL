@@ -1,5 +1,10 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import {
+  initializeAuth,
+  getAuth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+} from 'firebase/auth';
 import { getFirestore, collection } from 'firebase/firestore';
 import { getStorage, ref } from 'firebase/storage';
 
@@ -22,8 +27,23 @@ let storage = null;
 
 if (isConfigValid) {
   try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
+    const isFirstInit = getApps().length === 0;
+    app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
+
+    if (isFirstInit) {
+      // Explicitly set both persistence and popupRedirectResolver.
+      // getAuth() sets these internally but can return a cached instance
+      // without them if another module ran first — making signInWithPopup
+      // throw auth/argument-error when it looks up auth._popupRedirectResolver.
+      auth = initializeAuth(app, {
+        persistence: browserLocalPersistence,
+        popupRedirectResolver: browserPopupRedirectResolver,
+      });
+    } else {
+      // HMR / second-load: auth already initialized by the block above.
+      auth = getAuth(app);
+    }
+
     db = getFirestore(app);
     storage = getStorage(app);
   } catch (error) {
