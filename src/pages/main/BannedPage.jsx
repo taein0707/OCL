@@ -1,7 +1,10 @@
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 
 function BannedPage({ type = 'permanent' }) {
-  const { profile, logout } = useAuth()
+  const { profile, logout, firebaseUser } = useAuth()
+  const navigate = useNavigate()
   const isPermanent = type === 'permanent'
 
   const suspendedUntil = profile?.suspendedUntil?.toDate?.()
@@ -15,8 +18,14 @@ function BannedPage({ type = 'permanent' }) {
       })
     : null
 
+  // Redirect to /login once Firebase user is gone (after logout)
+  useEffect(() => {
+    if (!firebaseUser) navigate('/login', { replace: true })
+  }, [firebaseUser, navigate])
+
   const handleLogout = async () => {
     await logout()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -69,7 +78,7 @@ function BannedPage({ type = 'permanent' }) {
           <button
             type="button"
             className="neo-btn-outline w-full rounded-2xl py-3 text-sm"
-            onClick={() => window.open('mailto:support@ocl-lounge.app', '_blank')}
+            onClick={() => navigate('/support')}
           >
             고객센터 문의
           </button>

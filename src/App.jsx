@@ -18,6 +18,7 @@ import ProfilePage from './pages/main/ProfilePage'
 import SettingsPage from './pages/main/SettingsPage'
 import PostDetailPage from './pages/main/PostDetailPage'
 import BannedPage from './pages/main/BannedPage'
+import SupportPage from './pages/main/SupportPage'
 
 function App() {
   return (
@@ -61,10 +62,13 @@ function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users/:userId" element={<ProfilePage />} />
         <Route path="post/:postId" element={<PostDetailPage />} />
+        <Route path="support" element={<SupportPage />} />
       </Route>
 
+      {/* Public routes — accessible without auth (banned users need support) */}
       <Route path="/banned" element={<BannedPage type="permanent" />} />
       <Route path="/suspended" element={<BannedPage type="temporary" />} />
+      <Route path="/support" element={<SupportPage />} />
 
       <Route path="*" element={<Navigate to="/loading" replace />} />
     </Routes>

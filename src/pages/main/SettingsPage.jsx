@@ -541,6 +541,13 @@ function SettingsPage() {
         </button>
         <button
           type="button"
+          onClick={() => navigate('/support')}
+          className="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-ink transition hover:bg-mono-100"
+        >
+          고객센터 문의
+        </button>
+        <button
+          type="button"
           onClick={async () => {
             await logout()
             navigate('/loading', { replace: true })
