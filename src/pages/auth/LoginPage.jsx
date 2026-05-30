@@ -6,7 +6,7 @@ import SocialLoginButtons from '../../components/SocialLoginButtons.jsx'
 import FieldError from '../../components/FieldError.jsx'
 
 const panelClass =
-  'neo-card w-full max-w-md bg-white/[0.92] px-6 py-8 backdrop-blur sm:px-8 sm:py-10'
+  'neo-card w-full max-w-[520px] min-h-[460px] bg-white/[0.92] px-7 py-8 backdrop-blur sm:px-10 sm:py-10 flex flex-col justify-between'
 const subtleButtonClass =
   'text-sm font-semibold text-mono-500 transition hover:text-ink'
 
@@ -136,11 +136,9 @@ function LoginPage() {
   // ── 웰컴 ──────────────────────────────────────────────────────────────
   if (screen === 'welcome') {
     return (
-      <div className={`${panelClass} flex flex-col gap-8 text-center animate-[slideUpFade_0.3s_ease-out]`}>
+      <div className={`${panelClass} gap-8 text-center animate-[slideUpFade_0.3s_ease-out]`}>
         <div className="flex flex-col items-center gap-5">
-          <div className="rounded-[30px] border border-mono-200 bg-mono-100 px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-            <Logo size="lg" />
-          </div>
+          <Logo size="lg" />
           <div className="flex flex-col gap-3">
             <span className="mx-auto rounded-full border border-mono-200 bg-mono-100 px-3 py-1 text-[11px] font-semibold text-mono-600">
               teen community
@@ -170,9 +168,9 @@ function LoginPage() {
   // ── 로그인 방법 선택 ──────────────────────────────────────────────────
   if (screen === 'methods') {
     return (
-      <div className={`${panelClass} flex flex-col gap-6 animate-[slideUpFade_0.3s_ease-out]`}>
+      <div className={`${panelClass} gap-6 animate-[slideUpFade_0.3s_ease-out]`}>
         <div className="flex flex-col gap-4 text-center">
-          <div className="mx-auto rounded-[28px] border border-mono-200 bg-mono-100 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
+          <div className="flex justify-center">
             <Logo size="md" />
           </div>
           <div>
@@ -214,9 +212,7 @@ function LoginPage() {
       <div className={`${panelClass} animate-[slideUpFade_0.3s_ease-out]`}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="rounded-[24px] border border-mono-200 bg-mono-100 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-              <Logo size="md" />
-            </div>
+            <Logo size="md" />
             <div>
               <h1 className="sys-text text-2xl font-black text-ink">아이디 입력</h1>
               <p className="mx-auto mt-2 max-w-xs text-sm font-semibold text-mono-500">
@@ -259,9 +255,7 @@ function LoginPage() {
     <div className={`${panelClass} animate-[slideUpFade_0.3s_ease-out]`}>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="rounded-[24px] border border-mono-200 bg-mono-100 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-            <Logo size="md" />
-          </div>
+          <Logo size="md" />
           <div>
             <span className="inline-block rounded-full border border-mono-200 bg-mono-100 px-3 py-1 text-xs font-black text-mono-600">
               @{id}

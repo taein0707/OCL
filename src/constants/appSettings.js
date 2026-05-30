@@ -1,3 +1,25 @@
+export const THEMES = {
+  BASIC:   { primary: '#000000', background: '#FFFFFF', secondary: '#808080', text: '#111111', buttonText: '#FFFFFF' },
+  BLUE:    { primary: '#1A4778', background: '#BBD0E8', secondary: '#5A87B8', text: '#10243D', buttonText: '#FFFFFF' },
+  GREEN:   { primary: '#245532', background: '#C4D5B2', secondary: '#649552', text: '#16351F', buttonText: '#FFFFFF' },
+  RED:     { primary: '#A83C32', background: '#F9C8B2', secondary: '#E87C52', text: '#4A1B16', buttonText: '#FFFFFF' },
+  YELLOW:  { primary: '#D47822', background: '#FDE8A2', secondary: '#F4B842', text: '#5C340E', buttonText: '#FFFFFF' },
+  PURPLE:  { primary: '#523A78', background: '#D2C0E8', secondary: '#927AB8', text: '#2D2142', buttonText: '#FFFFFF' },
+  EMERALD: { primary: '#1A7878', background: '#BAE5E5', secondary: '#5AB8B8', text: '#114444', buttonText: '#FFFFFF' },
+  KHAKI:   { primary: '#787822', background: '#E8E8A2', secondary: '#B8B842', text: '#3D3D12', buttonText: '#FFFFFF' },
+}
+
+export const THEME_PRESETS = Object.entries(THEMES).map(([id, c]) => ({
+  id,
+  label: id,
+  primary: c.primary,
+  background: c.background,
+  sub: c.secondary,
+  secondary: c.secondary,
+  text: c.text,
+  buttonText: c.buttonText,
+}))
+
 export const BUTTON_COLOR_OPTIONS = [
   { id: 'signature-blue', label: '시그니처 블루', hex: '#2563eb' },
   { id: 'cyber-neon-blue', label: '사이버 네온 블루', hex: '#06b6d4' },
@@ -27,16 +49,17 @@ export const LEGACY_BUTTON_COLOR_MAP = {
 export const TAB_DEFINITIONS = {
   home: { path: '/home', label: '홈', Icon: 'HomeIcon' },
   class: { path: '/class', label: '우리 반', Icon: 'ClassIcon' },
-  create: { path: '/create', label: '작성', Icon: 'CreateIcon', center: true, required: true, fixedIndex: 2 },
+  create: { path: '/create', label: '작성', Icon: 'CreateIcon', center: true },
   search: { path: '/search', label: '검색', Icon: 'SearchIcon' },
-  my: { path: '/my', label: '프로필', Icon: 'MyIcon', required: true, fixedIndex: 4 },
+  my: { path: '/my', label: '프로필', Icon: 'MyIcon', required: true },
 }
 
 export const ALL_TAB_IDS = ['home', 'class', 'create', 'search', 'my']
-export const REQUIRED_TAB_IDS = ['create', 'my']
+export const REQUIRED_TAB_IDS = ['my']
 
 export const DEFAULT_APP_SETTINGS = {
   theme: 'light',
+  colorTheme: 'BASIC',
   buttonColor: 'black-base',
   fontSize: 'small',
   fontWeight: 'bold',
@@ -81,12 +104,6 @@ export function ensureRequiredTabs(settings) {
 
   REQUIRED_TAB_IDS.forEach((requiredId) => {
     if (!tabOrder.includes(requiredId)) tabOrder.push(requiredId)
-  })
-
-  Object.entries(TAB_DEFINITIONS).forEach(([tabId, tab]) => {
-    if (typeof tab.fixedIndex !== 'number') return
-    tabOrder = tabOrder.filter((id) => id !== tabId)
-    tabOrder.splice(Math.min(tab.fixedIndex, tabOrder.length), 0, tabId)
   })
 
   return {

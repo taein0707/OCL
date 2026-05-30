@@ -1,5 +1,5 @@
-import { deleteObject, getDownloadURL, uploadBytes } from 'firebase/storage'
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+﻿import { deleteObject, getDownloadURL, uploadBytes } from 'firebase/storage'
+import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, getDocs, query, where, limit } from 'firebase/firestore'
 import { db, getPublicCol, getProfilePhotoRef } from '../firebase/index.js'
 import { DEFAULT_APP_SETTINGS } from '../constants/appSettings.js'
 
@@ -73,4 +73,49 @@ export async function ensureUserProfile(uid, partial = {}) {
 export function isOnboardingDone(profile) {
   if (!profile) return false
   return Boolean(profile.onboardingComplete)
+}
+
+export async function reportPost({ reporterUid, reportedUid, reportedNickname, school, postId, reason }) {
+  if (!db) return
+  await addDoc(collection(db, 'declaration'), {
+    reporterUid: reporterUid || '',
+    reportedUid: reportedUid || '',
+    reportedNickname: reportedNickname || '',
+    school: school ? { id: String(school.id || ''), name: String(school.name || '') } : null,
+    postId: postId || '',
+    reason: reason || '',
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function searchUsersInFirestore(term) {
+  if (!term || !db) return []
+  const clean = (term.startsWith('@') ? term.slice(1) : term).trim()
+  if (!clean) return []
+  const end = clean + ''
+  const usersCol = getPublicCol('users')
+  try {
+    const [byNickname, byId] = await Promise.all([
+      getDocs(query(usersCol, where('nickname', '>=', clean), where('nickname', '<=', end), limit(12))),
+      getDocs(query(usersCol, where('id', '>=', clean), where('id', '<=', end), limit(12))),
+    ])
+    const map = new Map()
+    byNickname.docs.forEach((d) => map.set(d.id, { uid: d.id, ...d.data() }))
+    byId.docs.forEach((d) => map.set(d.id, { uid: d.id, ...d.data() }))
+    return Array.from(map.values())
+  } catch {
+    return []
+  }
+}
+
+export async function logUserChange({ uid, previousNickname, nextNickname, previousId, nextId }) {
+  if (!db) return
+  await addDoc(collection(db, 'user_logs'), {
+    uid: uid || '',
+    previousNickname: previousNickname || '',
+    nextNickname: nextNickname || '',
+    previousId: previousId || '',
+    nextId: nextId || '',
+    timestamp: serverTimestamp(),
+  })
 }

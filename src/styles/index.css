@@ -10,44 +10,47 @@
     --accent-soft: #f5f5f5;
     --accent-ring: #d4d4d4;
     --accent-shadow: #111111;
+    --theme-bg: #ffffff;
+    --theme-text: #111111;
+    --app-font-size: 14px;
+    --app-font-weight: 400;
   }
 
   html {
     @apply bg-mono-100 font-sans antialiased;
+    font-size: var(--app-font-size, 14px);
     min-height: 100%;
     overflow-x: hidden;
     -webkit-user-select: text;
     user-select: text;
     -webkit-touch-callout: default;
+    /* NOTE: transform은 position:fixed 기준점을 깨뜨리므로 html/body에 절대 사용 금지 */
   }
 
   body {
-    @apply min-h-[100svh] bg-mono-100 text-ink;
+    @apply min-h-[100svh] text-ink;
     min-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
-
+    background-color: var(--theme-bg, #ffffff);
     background-image: radial-gradient(
       circle at top,
-      rgba(255, 255, 255, 0.96),
-      rgba(245, 245, 245, 0.92) 34%,
-      rgba(229, 229, 229, 0.8) 70%,
-      rgba(212, 212, 212, 0.56) 100%
+      color-mix(in srgb, var(--theme-bg) 20%, white) 0%,
+      color-mix(in srgb, var(--theme-bg) 60%, white) 34%,
+      color-mix(in srgb, var(--theme-bg) 80%, white) 70%,
+      var(--theme-bg) 100%
     );
 
     line-height: 1.55;
     letter-spacing: -0.005em;
 
-    /* 🔥 iOS safe-area 핵심 */
+    /* status bar 영역만 확보. 하단은 탭 바가 자체적으로 safe-area 처리함 */
     padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
   }
 
   #root {
     min-height: 100svh;
-
-    /* 🔥 iOS 하단 잘림 방지 */
-    padding-bottom: env(safe-area-inset-bottom);
+    /* 하단 padding 제거 — body와 중복이며 탭 바가 이미 safe-area를 포함 */
   }
 
   body,
@@ -97,7 +100,8 @@
   }
 
   .neo-card {
-    @apply border border-mono-200/80 bg-white;
+    border: 1px solid rgba(0,0,0,0.08);
+    background-color: color-mix(in srgb, var(--theme-bg) 15%, white);
     border-radius: 24px;
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.8) inset,
@@ -148,6 +152,84 @@
 
   .auth-screen-shell {
     @apply flex min-h-[100dvh] items-center justify-center px-4 py-8 text-ink sm:px-6;
+  }
+
+  .auth-screen-shell-keyboard {
+    @apply items-start pt-6;
+  }
+
+  .auth-screen-inner {
+    @apply w-full max-w-[520px];
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border-radius: 11px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    transform: rotate(-7deg);
+    box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent-shadow) 38%, transparent);
+  }
+
+  .profile-tab-strip {
+    @apply flex gap-1 rounded-2xl border border-mono-200/70 bg-mono-50/80 p-1;
+  }
+
+  .profile-tab-button {
+    @apply flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[12.5px] font-black text-mono-500 transition;
+  }
+
+  .profile-tab-button-active {
+    @apply bg-white text-ink shadow-sm;
+  }
+
+  .chip-active {
+    border-color: var(--accent);
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .chip-idle {
+    @apply border-mono-200 bg-white text-mono-600 hover:bg-mono-50;
+  }
+
+  .option-active {
+    @apply rounded-2xl;
+    border-color: var(--accent);
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .option-idle {
+    @apply rounded-2xl border-mono-200 bg-white text-ink hover:bg-mono-50;
+  }
+
+  .theme-swatch {
+    @apply flex items-center gap-3 rounded-2xl border border-mono-200 bg-white px-4 py-3 transition hover:bg-mono-50;
+  }
+
+  .theme-swatch-active {
+    @apply border-ink ring-2 ring-ink ring-offset-1;
+  }
+
+  .theme-swatch-chip {
+    @apply h-5 w-5 rounded-full flex-shrink-0;
+  }
+
+  .profile-avatar-shell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 2px solid rgba(229, 229, 229, 0.8);
+    background-color: #f5f5f5;
+    flex-shrink: 0;
   }
 }
 

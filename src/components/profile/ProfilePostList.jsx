@@ -1,13 +1,16 @@
+import { useNavigate } from 'react-router-dom'
 import { formatTime } from '../../utils/index.js'
 
 function ProfilePostList({ posts, showAnonymousBadge = false }) {
+  const navigate = useNavigate()
   return (
     <ul className="flex flex-col gap-2.5">
       {posts.map((post, index) => (
         <li
           key={post.id}
-          className="neo-card animate-[slideUpFade_0.3s_ease-out]"
+          className="neo-card animate-[slideUpFade_0.3s_ease-out] cursor-pointer transition hover:bg-mono-50/60"
           style={{ animationDelay: `${Math.min(index * 30, 180)}ms` }}
+          onClick={() => navigate(`/post/${post.id}`)}
         >
           <article className="flex flex-col gap-2 px-5 py-4 sm:px-6 sm:py-5">
             <div className="flex items-start justify-between gap-3">

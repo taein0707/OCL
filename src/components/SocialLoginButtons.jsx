@@ -47,7 +47,7 @@ function SocialLoginButtons({ onGoogle, onApple, onEmail, disabled }) {
         onClick={onEmail}
         className={`${baseButtonClass} border-mono-300 bg-mono-100 text-ink shadow-[0_16px_30px_-24px_rgba(0,0,0,0.14)] hover:bg-mono-200 active:translate-y-[1px]`}
       >
-        <span>이메일로 로그인</span>
+        <span>아이디로 로그인</span>
       </button>
     </div>
   )

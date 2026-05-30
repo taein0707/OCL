@@ -1,17 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUpIcon, ArrowDownIcon, ArrowLeftIcon } from '../../components/icons/TabIcons.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useAppSettings } from '../../context/AppSettingsContext.jsx'
 import ProfileAvatar from '../../components/ProfileAvatar.jsx'
+import Toast from '../../components/Toast.jsx'
 import {
-  BUTTON_COLOR_OPTIONS,
+  THEME_PRESETS,
   TAB_DEFINITIONS,
   DEFAULT_APP_SETTINGS,
   ALL_TAB_IDS,
 } from '../../constants/appSettings.js'
 import { searchSchools, fetchMaxClassCount } from '../../services/neis.js'
 import FieldError from '../../components/FieldError.jsx'
+import { clearSeenPosts } from '../../services/feed.js'
+
+function getContrastColor(hex) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#000000' : '#ffffff'
+}
 
 const activeClass = 'option-active border px-4 py-3 text-sm font-black transition'
 const idleClass = 'option-idle border px-4 py-3 text-sm font-black transition'
@@ -28,12 +38,16 @@ function SettingsPage() {
     canChangePassword,
     updateProfilePhoto,
     clearProfilePhoto,
+    logout,
   } = useAuth()
   const { patchSettings, resetLivePatch } = useAppSettings()
   const [appSettings, setAppSettings] = useState({
     ...DEFAULT_APP_SETTINGS,
     ...(profile?.appSettings || {}),
   })
+  const [toast, setToast] = useState('')
+  const [saving, setSaving] = useState(false)
+  const showToast = useCallback((msg) => setToast(msg), [])
   const [profileForm, setProfileForm] = useState({
     id: profile?.id || '',
     nickname: profile?.nickname || '',
@@ -52,6 +66,7 @@ function SettingsPage() {
   const [searching, setSearching] = useState(false)
   const [maxClass, setMaxClass] = useState(6)
   const [error, setError] = useState('')
+  const initializedRef = useRef(false)
 
   const accountDescription = useMemo(() => {
     if (authProviderType === 'google.com') return 'Google 계정으로 로그인 중'
@@ -60,7 +75,8 @@ function SettingsPage() {
   }, [authProviderType])
 
   useEffect(() => {
-    if (!profile) return
+    if (!profile || initializedRef.current) return
+    initializedRef.current = true
     setAppSettings({
       ...DEFAULT_APP_SETTINGS,
       ...(profile.appSettings || {}),
@@ -139,16 +155,26 @@ function SettingsPage() {
   }
 
   const save = async () => {
+    if (saving) return
     setError('')
 
     if (profileForm.nickname.trim().length < 2) {
-      setError('닉네임은 2자 이상이어야 합니다.')
+      showToast('닉네임은 2자 이상이어야 합니다.')
       return
     }
+    setSaving(true)
+
+    const cleanSchool = profileForm.school ? {
+      id: String(profileForm.school.id || ''),
+      name: String(profileForm.school.name || ''),
+      address: String(profileForm.school.address || ''),
+      type: String(profileForm.school.type || ''),
+      eduCode: String(profileForm.school.eduCode || ''),
+    } : null
 
     const nextProfileData = {
       nickname: profileForm.nickname.trim(),
-      school: profileForm.school,
+      school: cleanSchool,
       grade: profileForm.grade,
       classNum: profileForm.classNum,
       appSettings,
@@ -173,9 +199,12 @@ function SettingsPage() {
 
       await updateProfile(nextProfileData)
       resetLivePatch()
-      navigate(-1)
+      showToast('설정이 저장됐어요')
+      setTimeout(() => navigate('/my'), 1400)
     } catch (err) {
-      setError(err.message || '설정을 저장하지 못했습니다.')
+      showToast(err.message || '설정을 저장하지 못했습니다.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -369,19 +398,30 @@ function SettingsPage() {
       </section>
 
       <section className="neo-card flex flex-col gap-4 p-5">
-        <span className="text-xs font-black tracking-[0.18em] text-mono-500">포인트 컬러</span>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {BUTTON_COLOR_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`theme-swatch ${appSettings.buttonColor === option.id ? 'theme-swatch-active' : ''}`}
-              onClick={() => updateLocalSettings({ buttonColor: option.id })}
-            >
-              <span className="theme-swatch-chip" style={{ backgroundColor: option.hex }} />
-              <span className="text-left text-xs font-black text-ink">{option.label}</span>
-            </button>
-          ))}
+        <span className="text-xs font-black tracking-[0.18em] text-mono-500">테마 색상</span>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+          {THEME_PRESETS.map((theme) => {
+            const isActive = (appSettings.colorTheme || 'BASIC') === theme.id
+            const fg = getContrastColor(theme.primary)
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => updateLocalSettings({ colorTheme: theme.id, buttonColor: null })}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 text-[10px] font-black transition ${
+                  isActive ? 'border-ink ring-2 ring-ink ring-offset-1' : 'border-mono-200 hover:border-mono-400'
+                }`}
+                style={{ backgroundColor: theme.background }}
+              >
+                <span
+                  className="flex h-7 w-full items-center justify-center rounded-lg text-[9px] font-black"
+                  style={{ backgroundColor: theme.primary, color: fg }}
+                >
+                  {theme.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </section>
 
@@ -401,15 +441,34 @@ function SettingsPage() {
         </div>
       </section>
 
+      <section className="neo-card flex flex-col gap-4 p-5">
+        <span className="text-xs font-black tracking-[0.18em] text-mono-500">게시물 스타일</span>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { id: 'card', label: '카드형' },
+            { id: 'mini', label: '미니 리스트' },
+            { id: 'thumb', label: '큰 썸네일' },
+          ].map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              className={appSettings.postStyle === o.id ? activeClass : idleClass}
+              onClick={() => updateLocalSettings({ postStyle: o.id })}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="neo-card flex flex-col gap-3 p-5">
         <span className="text-xs font-black tracking-[0.18em] text-mono-500">탭 순서 · 표시</span>
         {ALL_TAB_IDS.map((tabId) => {
           const tab = TAB_DEFINITIONS[tabId]
           if (!tab) return null
-          const isRequired = tab.required || tabId === 'create'
+          const isRequired = tab.required
           const enabled = appSettings.enabledTabs.includes(tabId)
           const idx = appSettings.tabOrder.indexOf(tabId)
-          const isFixed = tab.fixedIndex !== undefined
           return (
             <div key={tabId} className="flex flex-wrap items-center gap-2 rounded-[22px] border border-mono-200 bg-mono-50 px-3 py-3 text-sm font-bold text-ink">
               <button
@@ -418,34 +477,28 @@ function SettingsPage() {
                   enabled ? 'chip-active' : 'chip-idle'
                 }`}
                 onClick={() => {
-                  if (isRequired || isFixed) return
+                  if (isRequired) return
                   const nextEnabled = enabled
                     ? appSettings.enabledTabs.filter((id) => id !== tabId)
                     : [...appSettings.enabledTabs, tabId]
                   updateLocalSettings({ enabledTabs: nextEnabled })
                 }}
-                disabled={isRequired || isFixed}
+                disabled={isRequired}
               >
                 {enabled ? 'ON' : 'OFF'}
               </button>
               <span className="flex-1 font-black">{tab.label}</span>
-              {isFixed && (
-                <span className="rounded-full border border-mono-200 bg-white px-2 py-1 text-[10px] font-black text-mono-500">
-                  위치 고정
-                </span>
-              )}
               <button
                 type="button"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-mono-200 bg-white text-ink transition hover:bg-mono-100 disabled:opacity-40"
                 onClick={() => {
-                  if (isFixed) return
                   const order = [...appSettings.tabOrder]
-                  if (idx > 0 && !TAB_DEFINITIONS[order[idx - 1]]?.fixedIndex) {
+                  if (idx > 0) {
                     ;[order[idx - 1], order[idx]] = [order[idx], order[idx - 1]]
                   }
                   updateLocalSettings({ tabOrder: order })
                 }}
-                disabled={idx <= 0 || isFixed || TAB_DEFINITIONS[appSettings.tabOrder[idx - 1]]?.fixedIndex}
+                disabled={idx <= 0}
               >
                 <ArrowUpIcon className="w-4 h-4" />
               </button>
@@ -453,19 +506,13 @@ function SettingsPage() {
                 type="button"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-mono-200 bg-white text-ink transition hover:bg-mono-100 disabled:opacity-40"
                 onClick={() => {
-                  if (isFixed) return
                   const order = [...appSettings.tabOrder]
-                  if (idx >= 0 && idx < order.length - 1 && !TAB_DEFINITIONS[order[idx + 1]]?.fixedIndex) {
+                  if (idx >= 0 && idx < order.length - 1) {
                     ;[order[idx + 1], order[idx]] = [order[idx], order[idx + 1]]
                   }
                   updateLocalSettings({ tabOrder: order })
                 }}
-                disabled={
-                  idx < 0 ||
-                  idx === appSettings.tabOrder.length - 1 ||
-                  isFixed ||
-                  TAB_DEFINITIONS[appSettings.tabOrder[idx + 1]]?.fixedIndex
-                }
+                disabled={idx < 0 || idx === appSettings.tabOrder.length - 1}
               >
                 <ArrowDownIcon className="w-4 h-4" />
               </button>
@@ -474,9 +521,50 @@ function SettingsPage() {
         })}
       </section>
 
-      <button type="button" className="neo-btn self-end" onClick={save}>
-        저장
+      <section className="neo-card flex flex-col gap-2 p-4">
+        <button
+          type="button"
+          onClick={() => window.open('https://vocal-kitten-d0c02e.netlify.app', '_blank', 'noopener,noreferrer')}
+          className="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-ink transition hover:bg-mono-100"
+        >
+          개인정보 이용약관
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            clearSeenPosts(firebaseUser?.uid)
+            showToast('피드 기록이 초기화됐어요')
+          }}
+          className="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-ink transition hover:bg-mono-100"
+        >
+          추천 피드 기록 초기화
+        </button>
+        <button
+          type="button"
+          onClick={async () => {
+            await logout()
+            navigate('/loading', { replace: true })
+          }}
+          className="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-red-500 transition hover:bg-mono-100"
+        >
+          로그아웃
+        </button>
+      </section>
+
+      <button type="button" className="neo-btn self-end min-w-[90px]" onClick={save} disabled={saving}>
+        {saving ? '저장 중...' : '저장'}
       </button>
+
+      {saving && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
+          <div className="neo-card flex flex-col items-center gap-4 p-8">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-mono-200 border-t-[var(--accent)]" />
+            <p className="text-sm font-black text-ink">저장 중입니다...</p>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast} onClose={() => setToast('')} />}
     </div>
   )
 }

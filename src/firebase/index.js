@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getFirestore, collection } from 'firebase/firestore';
+import { getStorage, ref } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -44,3 +44,11 @@ if (isConfigValid) {
 }
 
 export { auth, db, storage, isConfigValid };
+
+export function getPublicCol(collectionName) {
+  return collection(db, collectionName)
+}
+
+export function getProfilePhotoRef(uid, key) {
+  return ref(storage, `users/${uid}/avatar-${key}`)
+}

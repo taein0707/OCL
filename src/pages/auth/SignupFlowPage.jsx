@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useAppSettings } from '../../context/AppSettingsContext.jsx'
-import { fetchMaxClassCount } from '../../services/neis.js'
+import { fetchMaxClassCount, searchSchools } from '../../services/neis.js'
 import { ArrowUpIcon, ArrowDownIcon } from '../../components/icons/TabIcons.jsx'
 import {
   BUTTON_COLOR_OPTIONS,
@@ -11,8 +11,10 @@ import {
   ALL_TAB_IDS,
 } from '../../constants/appSettings.js'
 import FieldError from '../../components/FieldError.jsx'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../../firebase/index.js'
 
-const STEPS = ['nickname', 'grade', 'class', 'settings', 'boards']
+const STEPS = ['terms', 'nickname', 'school', 'grade', 'class', 'settings', 'boards']
 const ALL_BOARDS = ['자유', '질문', '공부', '급식', '고민상담', '동아리', '취미', '일상', '유머', '정보']
 const DEFAULT_BOARDS = ['자유', '질문', '공부', '급식']
 const RELOAD_GUARD_KEY = 'ocl:onboarding-reload-time-origin'
@@ -32,7 +34,7 @@ function SignupFlowPage() {
     completeOnboarding,
   } = useAuth()
   const { patchSettings } = useAppSettings()
-  const [step, setStep] = useState('nickname')
+  const [step, setStep] = useState('terms')
   const [form, setForm] = useState({
     nickname: profile?.nickname || '',
     school: profile?.school || null,
@@ -46,6 +48,27 @@ function SignupFlowPage() {
     ...(profile?.appSettings || {}),
   })
   const [error, setError] = useState('')
+  const [schoolSearch, setSchoolSearch] = useState('')
+  const [schoolResults, setSchoolResults] = useState([])
+  const [schoolSearching, setSchoolSearching] = useState(false)
+  const [termsAgreed, setTermsAgreed] = useState(false)
+  const [termsContent, setTermsContent] = useState('')
+  const [termsLoading, setTermsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!db) return
+    setTermsLoading(true)
+    getDoc(doc(db, 'terms', 'lHWvJI0tZ41E514X7NKf'))
+      .then((snap) => {
+        if (snap.exists()) {
+          const data = snap.data()
+          const raw = data.content || data.text || JSON.stringify(data, null, 2)
+          setTermsContent(raw.replace(/\\n/g, '\n'))
+        }
+      })
+      .catch(() => {})
+      .finally(() => setTermsLoading(false))
+  }, [])
 
   const stepIndex = STEPS.indexOf(step)
 
@@ -107,6 +130,20 @@ function SignupFlowPage() {
     [maxClass],
   )
 
+  const doSchoolSearch = async () => {
+    if (!schoolSearch.trim()) return
+    setSchoolSearching(true)
+    setError('')
+    try {
+      setSchoolResults(await searchSchools(schoolSearch))
+    } catch {
+      setSchoolResults([])
+      setError('학교 검색에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setSchoolSearching(false)
+    }
+  }
+
   const next = () => {
     const i = STEPS.indexOf(step)
     if (i < STEPS.length - 1) setStep(STEPS[i + 1])
@@ -140,9 +177,11 @@ function SignupFlowPage() {
   const finish = async () => {
     const boards = Array.from(new Set(tempBoards))
     await runWithRecovery(async () => {
+      const s = form.school
+      const cleanSchool = s ? { id: String(s.id || ''), name: String(s.name || ''), address: String(s.address || ''), type: String(s.type || ''), eduCode: String(s.eduCode || '') } : null
       await completeOnboarding({
         nickname: form.nickname,
-        school: form.school,
+        school: cleanSchool,
         grade: form.grade,
         classNum: form.classNum,
         selectedBoards: boards.length ? boards : DEFAULT_BOARDS,
@@ -167,16 +206,12 @@ function SignupFlowPage() {
   }
 
   const moveTab = (tabId, dir) => {
-    const tab = TAB_DEFINITIONS[tabId]
-    if (tab?.fixedIndex !== undefined) return
-
     setAppSettings((s) => {
       const order = [...s.tabOrder]
       const idx = order.indexOf(tabId)
       if (idx < 0) return s
       const swap = idx + dir
       if (swap < 0 || swap >= order.length) return s
-      if (TAB_DEFINITIONS[order[swap]]?.fixedIndex !== undefined) return s
       ;[order[idx], order[swap]] = [order[swap], order[idx]]
       const next = { ...s, tabOrder: order }
       patchSettings({ tabOrder: order })
@@ -209,6 +244,42 @@ function SignupFlowPage() {
           <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
             <FieldError message={error} />
 
+            {step === 'terms' && (
+              <>
+                <div className="flex flex-col gap-2 max-w-md">
+                  <span className="text-[11px] font-black tracking-[0.18em] text-mono-500">약관 동의</span>
+                  <h2 className="sys-text text-3xl font-black text-ink">개인정보 수집 및 이용 동의</h2>
+                  <p className="text-sm font-semibold text-mono-500">서비스 이용 전 약관에 동의해 주세요.</p>
+                </div>
+                <div className="neo-card max-h-56 overflow-y-auto p-4">
+                  {termsLoading ? (
+                    <p className="text-sm font-semibold text-mono-500">약관을 불러오는 중입니다...</p>
+                  ) : termsContent ? (
+                    <pre className="whitespace-pre-wrap text-[12px] font-medium leading-[1.7] text-mono-600">{termsContent}</pre>
+                  ) : (
+                    <p className="text-sm font-semibold text-mono-500">약관을 불러오지 못했습니다. 계속 진행하시면 기본 약관에 동의한 것으로 간주됩니다.</p>
+                  )}
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                    className="h-5 w-5 rounded accent-[var(--accent)]"
+                  />
+                  <span className="text-sm font-black text-ink">위 내용에 동의합니다</span>
+                </label>
+                <button
+                  type="button"
+                  className="neo-btn w-full sm:w-auto sm:self-end"
+                  disabled={!termsAgreed}
+                  onClick={next}
+                >
+                  동의하고 시작하기
+                </button>
+              </>
+            )}
+
             {step === 'nickname' && (
               <>
                 <div className="flex flex-col gap-2 max-w-md">
@@ -233,6 +304,74 @@ function SignupFlowPage() {
                 >
                   다음
                 </button>
+              </>
+            )}
+
+            {step === 'school' && (
+              <>
+                <div className="flex flex-col gap-2 max-w-md">
+                  <span className="text-[11px] font-black tracking-[0.18em] text-mono-500">학교</span>
+                  <h2 className="sys-text text-3xl font-black text-ink">학교를 찾아요</h2>
+                  <p className="text-sm font-semibold text-mono-500">학교 이름으로 검색하면 돼요.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    className="neo-input flex-1"
+                    value={schoolSearch}
+                    onChange={(e) => setSchoolSearch(e.target.value)}
+                    placeholder="학교명"
+                    onKeyDown={(e) => e.key === 'Enter' && doSchoolSearch()}
+                  />
+                  <button
+                    type="button"
+                    className="neo-btn sm:min-w-[100px]"
+                    onClick={doSchoolSearch}
+                    disabled={schoolSearching}
+                  >
+                    {schoolSearching ? '검색 중...' : '검색'}
+                  </button>
+                </div>
+                {form.school && (
+                  <div className="rounded-[22px] border border-mono-200 bg-mono-50 px-4 py-3 text-sm font-semibold text-ink">
+                    <p className="text-xs font-black text-mono-500">선택한 학교</p>
+                    <p className="mt-1 truncate">{form.school.name}</p>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2 max-h-56 overflow-y-auto hide-scrollbar">
+                  {schoolResults.map((school) => (
+                    <button
+                      key={school.id}
+                      type="button"
+                      className="rounded-[22px] border border-mono-200 bg-white px-4 py-4 text-left transition hover:bg-mono-100"
+                      onClick={() => setForm((f) => ({ ...f, school }))}
+                    >
+                      <span className="block font-black text-ink">{school.name}</span>
+                      <span className="mt-1 block text-xs font-semibold text-mono-500 line-clamp-2">{school.address}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="neo-btn w-full sm:w-auto sm:self-end"
+                    disabled={!form.school}
+                    onClick={() => runWithRecovery(async () => {
+                      const s = form.school
+                      const cleanSchool = s ? { id: String(s.id || ''), name: String(s.name || ''), address: String(s.address || ''), type: String(s.type || ''), eduCode: String(s.eduCode || '') } : null
+                      await updateProfile({ school: cleanSchool, grade: form.grade, classNum: form.classNum })
+                      next()
+                    })}
+                  >
+                    다음
+                  </button>
+                  <button
+                    type="button"
+                    className="neo-btn-outline w-full sm:w-auto sm:self-end"
+                    onClick={() => { setForm((f) => ({ ...f, school: null })); next() }}
+                  >
+                    건너뛰기
+                  </button>
+                </div>
               </>
             )}
 
@@ -329,22 +468,6 @@ function SignupFlowPage() {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <span className="text-xs font-black tracking-[0.18em] text-mono-500">글씨 두께</span>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['normal', 'bold', 'black'].map((w) => (
-                      <button
-                        key={w}
-                        type="button"
-                        className={`${stepButtonClass} ${appSettings.fontWeight === w ? selectActive : selectIdle}`}
-                        onClick={() => applySettings({ fontWeight: w })}
-                      >
-                        {w}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
                   <span className="text-xs font-black tracking-[0.18em] text-mono-500">탭 순서 · 표시</span>
                   <div className="flex flex-col gap-2">
                     {ALL_TAB_IDS.map((tabId) => {
@@ -352,7 +475,7 @@ function SignupFlowPage() {
                       if (!tab) return null
                       const on = appSettings.enabledTabs.includes(tabId)
                       const idx = appSettings.tabOrder.indexOf(tabId)
-                      const isFixed = tab.fixedIndex !== undefined
+                      const isRequired = tab.required
                       return (
                         <div key={tabId} className="flex flex-wrap items-center gap-2 rounded-[24px] border border-mono-200 bg-mono-50 px-3 py-3">
                           <button
@@ -360,22 +483,17 @@ function SignupFlowPage() {
                             className={`min-w-[56px] rounded-full border px-3 py-1 text-xs font-black transition ${
                               on ? 'chip-active' : 'chip-idle'
                             }`}
-                            onClick={() => !tab.required && !isFixed && toggleTab(tabId)}
-                            disabled={tab.required || isFixed}
+                            onClick={() => !isRequired && toggleTab(tabId)}
+                            disabled={isRequired}
                           >
                             {on ? 'ON' : 'OFF'}
                           </button>
                           <span className="flex-1 text-sm font-black text-ink">{tab.label}</span>
-                          {isFixed && (
-                            <span className="rounded-full border border-mono-200 bg-white px-2 py-1 text-[10px] font-black text-mono-500">
-                              위치 고정
-                            </span>
-                          )}
                           <button
                             type="button"
                             className="flex h-9 w-9 items-center justify-center rounded-full border border-mono-200 bg-white text-ink transition hover:bg-mono-100 disabled:opacity-40"
                             onClick={() => moveTab(tabId, -1)}
-                            disabled={idx <= 0 || isFixed}
+                            disabled={idx <= 0}
                           >
                             <ArrowUpIcon className="w-4 h-4" />
                           </button>
@@ -383,7 +501,7 @@ function SignupFlowPage() {
                             type="button"
                             className="flex h-9 w-9 items-center justify-center rounded-full border border-mono-200 bg-white text-ink transition hover:bg-mono-100 disabled:opacity-40"
                             onClick={() => moveTab(tabId, 1)}
-                            disabled={idx < 0 || idx === appSettings.tabOrder.length - 1 || isFixed}
+                            disabled={idx < 0 || idx === appSettings.tabOrder.length - 1}
                           >
                             <ArrowDownIcon className="w-4 h-4" />
                           </button>

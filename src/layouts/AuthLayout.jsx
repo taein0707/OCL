@@ -5,7 +5,7 @@ function AuthLayout({ children }) {
 
   return (
     <div className={`auth-screen-shell ${keyboardOpen ? 'auth-screen-shell-keyboard' : ''}`}>
-      <div className="auth-screen-inner">{children}</div>
+      <div className="auth-screen-inner w-full">{children}</div>
     </div>
   )
 }

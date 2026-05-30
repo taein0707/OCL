@@ -8,7 +8,7 @@ function Logo({ size = 'md', className = '' }) {
       <span className={`logo-mark ${boxSize}`} aria-hidden="true">
         OCL
       </span>
-      <span className="sys-text font-black text-xl text-ink tracking-tight">Lounge</span>
+      <span className="sys-text font-black text-xl tracking-tight" style={{ color: 'var(--accent)' }}>Lounge</span>
     </Link>
   )
 }

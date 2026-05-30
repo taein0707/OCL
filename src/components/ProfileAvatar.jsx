@@ -13,7 +13,7 @@ function ProfileAvatar({ profile, size = 'lg', editable = false, onEdit, onRemov
   const hasPhoto = Boolean(profile?.profilePhoto?.url)
 
   return (
-    <div className={`relative ${dimensions} animate-[slideUpFade_0.3s_ease-out]`}>
+    <div className={`relative ${dimensions} animate-[slideUpFade_0.3s_ease-out]`} style={{ marginBottom: editable ? '1.5rem' : undefined }}>
       <div className={`profile-avatar-shell ${dimensions}`}>
         {hasPhoto ? (
           <img src={profile.profilePhoto.url} alt="프로필 사진" className={`h-full w-full object-cover ${dimensions}`} />
@@ -22,14 +22,17 @@ function ProfileAvatar({ profile, size = 'lg', editable = false, onEdit, onRemov
         )}
       </div>
       {editable && (
-        <div className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-mono-200 bg-white px-2 py-1 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.25)] transition-transform duration-200 hover:-translate-y-[1px]">
-          <button type="button" onClick={onEdit} className="text-[10px] font-black text-ink">
-            사진 변경
+        <div className="absolute -bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-mono-200 bg-white px-2.5 py-1 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.25)]">
+          <button type="button" onClick={onEdit} className="whitespace-nowrap text-[10px] font-black text-ink">
+            변경
           </button>
           {hasPhoto && (
-            <button type="button" onClick={onRemove} className="text-[10px] font-black text-mono-500">
-              제거
-            </button>
+            <>
+              <span className="text-[9px] text-mono-300">·</span>
+              <button type="button" onClick={onRemove} className="whitespace-nowrap text-[10px] font-black text-mono-500">
+                제거
+              </button>
+            </>
           )}
         </div>
       )}

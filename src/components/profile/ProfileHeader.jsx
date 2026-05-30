@@ -5,7 +5,6 @@ function ProfileHeader({
   handle,
   postsCount,
   friendsCount,
-  pendingCount,
   primaryAction,
   secondaryAction,
   editableAvatar = false,
@@ -36,7 +35,7 @@ function ProfileHeader({
         />
 
         <div className="min-w-0 flex-1">
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 gap-3 text-center">
             <div className="animate-[slideUpFade_0.3s_ease-out]">
               <p className="text-lg font-black text-ink">{postsCount}</p>
               <p className="text-xs font-semibold text-mono-500">게시물</p>
@@ -44,10 +43,6 @@ function ProfileHeader({
             <div className="animate-[slideUpFade_0.3s_ease-out]">
               <p className="text-lg font-black text-ink">{friendsCount}</p>
               <p className="text-xs font-semibold text-mono-500">친구</p>
-            </div>
-            <div className="animate-[slideUpFade_0.3s_ease-out]">
-              <p className="text-lg font-black text-ink">{pendingCount}</p>
-              <p className="text-xs font-semibold text-mono-500">허용 대기</p>
             </div>
           </div>
 

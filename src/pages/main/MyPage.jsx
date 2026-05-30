@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BellIcon, MenuIcon, ListIcon } from '../../components/icons/TabIcons.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -12,35 +12,40 @@ import {
   getUserFriendStats,
 } from '../../services/community.js'
 
+// menuRef, menuOpen are kept for potential future use but dropdown is removed
+
 function MyPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
-  const { profile, firebaseUser, logout, updateProfilePhoto, clearProfilePhoto, updateProfile } = useAuth()
+  const { profile, firebaseUser, updateProfilePhoto, clearProfilePhoto, updateProfile } = useAuth()
   const [version, setVersion] = useState(0)
-  const [tab, setTab] = useState('posts') // 'posts' | 'notifications'
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef(null)
+  const [tab, setTab] = useState('posts')
   const [bioEditing, setBioEditing] = useState(false)
   const [bioText, setBioText] = useState('')
-
-  useEffect(() => {
-    if (!menuOpen) return
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [menuOpen])
+  const [myPosts, setMyPosts] = useState([])
+  const [friendStats, setFriendStats] = useState({ friends: 0, pendingApprovals: 0, outgoingApprovals: 0 })
+  const [approvalNotifications, setApprovalNotifications] = useState([])
 
   const displayId =
     profile?.id || firebaseUser?.email?.split('@')[0] || firebaseUser?.uid?.slice(0, 8) || '—'
 
-  const myPosts = useMemo(() => getPostsByOwner(profile?.uid, profile), [profile, version])
-  const friendStats = useMemo(() => getUserFriendStats(profile?.uid), [profile?.uid, version])
-  const approvalNotifications = useMemo(
-    () => getFriendApprovalNotifications(profile?.uid, profile),
-    [profile, version],
-  )
+  useEffect(() => {
+    if (!profile?.uid) return
+    let cancelled = false
+    Promise.all([
+      getPostsByOwner(profile.uid, profile),
+      getUserFriendStats(profile.uid),
+      getFriendApprovalNotifications(profile.uid),
+    ]).then(([posts, stats, notifs]) => {
+      if (!cancelled) {
+        setMyPosts(posts)
+        setFriendStats(stats)
+        setApprovalNotifications(notifs)
+      }
+    })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.uid, version])
 
   const sortedPosts = useMemo(
     () => [...myPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -55,13 +60,13 @@ function MyPage() {
     event.target.value = ''
   }
 
-  const handleApproveFriend = (requesterUid) => {
-    approveFriendRequest(profile?.uid, requesterUid)
+  const handleApproveFriend = async (requesterUid) => {
+    await approveFriendRequest(profile?.uid, requesterUid)
     setVersion((prev) => prev + 1)
   }
 
-  const handleDeclineFriend = (requesterUid) => {
-    declineFriendRequest(profile?.uid, requesterUid)
+  const handleDeclineFriend = async (requesterUid) => {
+    await declineFriendRequest(profile?.uid, requesterUid)
     setVersion((prev) => prev + 1)
   }
 
@@ -86,7 +91,6 @@ function MyPage() {
         handle={`@${displayId}`}
         postsCount={sortedPosts.length}
         friendsCount={friendStats.friends}
-        pendingCount={friendStats.pendingApprovals}
         editableAvatar
         onAvatarEdit={() => fileInputRef.current?.click()}
         onAvatarRemove={async () => {
@@ -94,48 +98,15 @@ function MyPage() {
           setVersion((prev) => prev + 1)
         }}
         hideBio
-        primaryAction={(
+        secondaryAction={(
           <button
             type="button"
-            className="neo-btn-outline flex-1 rounded-xl px-4 py-2 text-sm"
             onClick={() => navigate('/settings')}
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-mono-200 bg-white text-lg font-black text-ink transition hover:bg-mono-100"
+            aria-label="설정"
           >
-            프로필 편집
+            <MenuIcon className="w-5 h-5" />
           </button>
-        )}
-        secondaryAction={(
-          <div ref={menuRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-mono-200 bg-white text-lg font-black text-ink transition hover:bg-mono-100"
-              aria-label="더 보기"
-            >
-              <MenuIcon className="w-5 h-5" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[148px] rounded-2xl border border-mono-200 bg-white p-1.5 shadow-lg animate-[slideUpFade_0.15s_ease-out]">
-                <button
-                  type="button"
-                  onClick={() => { setMenuOpen(false); navigate('/settings') }}
-                  className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-ink transition hover:bg-mono-100"
-                >
-                  설정
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setMenuOpen(false)
-                    await logout()
-                    navigate('/loading', { replace: true })
-                  }}
-                  className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-error-text transition hover:bg-mono-100"
-                >
-                  로그아웃
-                </button>
-              </div>
-            )}
-          </div>
         )}
       />
 
@@ -179,15 +150,7 @@ function MyPage() {
             수정
           </button>
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => { setBioText(''); setBioEditing(true) }}
-          className="neo-btn-outline w-full rounded-2xl py-3 text-sm"
-        >
-          + 한 줄 소개 쓰기
-        </button>
-      )}
+      ) : null}
 
       {/* 게시물 / 알림 탭 */}
       <div className="profile-tab-strip">

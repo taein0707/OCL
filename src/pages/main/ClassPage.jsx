@@ -32,9 +32,18 @@ function ClassPage() {
   const summary = useMemo(() => getSchoolSummary(profile), [profile])
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [classPosts, setClassPosts] = useState(() => getClassPosts(profile))
+  const [classPosts, setClassPosts] = useState([])
   const [compose, setCompose] = useState({ open: false, title: '', content: '', anonymous: false })
   const [composeError, setComposeError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    getClassPosts(profile).then((posts) => {
+      if (!cancelled) setClassPosts(posts)
+    })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.uid, profile?.school?.id, profile?.grade, profile?.classNum])
 
   useEffect(() => {
     let cancelled = false
@@ -67,17 +76,18 @@ function ClassPage() {
     }
   }, [profile])
 
-  const handleClassPostSubmit = () => {
+  const handleClassPostSubmit = async () => {
     if (!compose.title.trim()) {
       setComposeError('제목을 입력해 주세요.')
       return
     }
     try {
-      createClassPost(
+      await createClassPost(
         { title: compose.title, content: compose.content, anonymous: compose.anonymous },
         profile,
       )
-      setClassPosts(getClassPosts(profile))
+      const posts = await getClassPosts(profile)
+      setClassPosts(posts)
       setCompose({ open: false, title: '', content: '', anonymous: false })
       setComposeError('')
     } catch (err) {
@@ -109,11 +119,11 @@ function ClassPage() {
       {/* 급식 / 시간표 영역 */}
       <SchoolDaySection loading={loading} status={status} />
 
-      {/* 급우 게시판 */}
+      {/* 우리 반 친구들 목록 */}
       <section className="neo-card flex flex-col gap-5 px-5 py-5 sm:px-6 sm:py-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-black text-ink sm:text-xl">급우 게시판</h2>
+            <h2 className="text-lg font-black text-ink sm:text-xl">우리 반 친구들 목록</h2>
             <p className="mt-1 text-[12.5px] font-medium text-mono-500">
               {summary.homeroom} 전용 익명·실명 게시판이에요.
             </p>
@@ -174,7 +184,7 @@ function ClassPage() {
         <div className="flex flex-col gap-2.5">
           {classPosts.length === 0 ? (
             <div className="rounded-[20px] border border-mono-200/70 bg-mono-50/70 px-4 py-5 text-center">
-              <p className="text-[13px] font-medium text-mono-500">아직 급우 게시판에 글이 없어요.</p>
+              <p className="text-[13px] font-medium text-mono-500">아직 우리 반 친구들 목록에 글이 없어요.</p>
               <p className="mt-1 text-[11.5px] text-mono-400">우리 반 첫 번째 글의 주인공이 되어보세요!</p>
             </div>
           ) : (

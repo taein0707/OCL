@@ -1,21 +1,48 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
+import {
+  hasCompletedFirstRunPermissionFlow,
+  markFirstRunPermissionFlowCompleted,
+  requestNotificationPermission,
+} from '../../utils/permissions.js'
+import { isNative } from '../../utils/platform.js'
 
 function LoadingPage() {
   const navigate = useNavigate()
-  const { loading, isAuthenticated } = useAuth()
+  const { loading, isAuthenticated, onboardingComplete, profileStatus } = useAuth()
 
   useEffect(() => {
     if (loading) return
+    if (profileStatus === 'loading') return
 
-    if (!isAuthenticated) {
-      navigate('/login', { replace: true })
-      return
+    const run = async () => {
+      if (!isAuthenticated || profileStatus === 'recovery') {
+        navigate('/login', { replace: true })
+        return
+      }
+
+      if (!onboardingComplete) {
+        navigate('/auth/signup', { replace: true })
+        return
+      }
+
+      if (isNative()) {
+        const done = await hasCompletedFirstRunPermissionFlow()
+        if (!done) {
+          try {
+            await requestNotificationPermission()
+          } finally {
+            await markFirstRunPermissionFlowCompleted()
+          }
+        }
+      }
+
+      navigate('/home', { replace: true })
     }
 
-    navigate('/home', { replace: true })
-  }, [loading, isAuthenticated, navigate])
+    void run()
+  }, [loading, isAuthenticated, onboardingComplete, profileStatus, navigate])
 
   return (
     <div style={{

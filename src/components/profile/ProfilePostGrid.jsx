@@ -1,8 +1,16 @@
+import { useNavigate } from 'react-router-dom'
+
 function ProfilePostGrid({ posts, showAnonymousBadge = false }) {
+  const navigate = useNavigate()
   return (
     <div className="grid grid-cols-3 gap-[1px] overflow-hidden rounded-[24px] border border-mono-200 bg-mono-200">
       {posts.map((post, index) => (
-        <article key={post.id} className="profile-grid-tile animate-[slideUpFade_0.3s_ease-out]" style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}>
+        <article
+          key={post.id}
+          className="profile-grid-tile animate-[slideUpFade_0.3s_ease-out] cursor-pointer"
+          style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}
+          onClick={() => navigate(`/post/${post.id}`)}
+        >
           <div className="profile-grid-overlay">
             <div className="flex items-start justify-between gap-2">
               <span className="profile-grid-chip">{post.board}</span>

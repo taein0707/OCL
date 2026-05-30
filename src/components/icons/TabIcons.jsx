@@ -43,6 +43,15 @@ export function MyIcon({ className = 'w-6 h-6' }) {
   )
 }
 
+export function UserIcon({ className = 'w-6 h-6' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
 export function FlameIcon({ className = 'w-4 h-4' }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -61,16 +70,6 @@ export function BellIcon({ className = 'w-5 h-5' }) {
   )
 }
 
-export function MenuIcon({ className = 'w-5 h-5' }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="18" x2="20" y2="18" />
-    </svg>
-  )
-}
-
 export function ListIcon({ className = 'w-5 h-5' }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -80,6 +79,16 @@ export function ListIcon({ className = 'w-5 h-5' }) {
       <circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none" />
       <circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none" />
       <circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+export function MenuIcon({ className = 'w-5 h-5' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
     </svg>
   )
 }
@@ -114,4 +123,10 @@ export const TAB_ICON_MAP = {
   CreateIcon,
   SearchIcon,
   MyIcon,
+  UserIcon,
+  ListIcon,
+  BellIcon,
+  MenuIcon,
+  PlusCircleIcon: CreateIcon,
+  AcademicCapIcon: ClassIcon,
 }
