@@ -8,6 +8,7 @@ import {
   signInWithCredential,
   GoogleAuthProvider,
   OAuthProvider,
+  browserPopupRedirectResolver,
   signOut,
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -205,7 +206,7 @@ export function AuthProvider({ children }) {
 
     // Web: signInWithPopup (unchanged)
     try {
-      const cred = await signInWithPopup(auth, new GoogleAuthProvider())
+      const cred = await signInWithPopup(auth, new GoogleAuthProvider(), browserPopupRedirectResolver)
       await ensureUserProfile(cred.user.uid, buildFallbackProfile(cred.user))
       return bootstrapProfile(cred.user)
     } catch (e) {
@@ -244,7 +245,7 @@ export function AuthProvider({ children }) {
 
     // Web / Android: signInWithPopup (Apple does not support Android natively)
     try {
-      const cred = await signInWithPopup(auth, new OAuthProvider('apple.com'))
+      const cred = await signInWithPopup(auth, new OAuthProvider('apple.com'), browserPopupRedirectResolver)
       await ensureUserProfile(cred.user.uid, buildFallbackProfile(cred.user))
       return bootstrapProfile(cred.user)
     } catch (e) {
