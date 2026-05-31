@@ -11,6 +11,20 @@ import {
   getPostsByOwner,
   getUserFriendStats,
 } from '../../services/community.js'
+import { getRecentAnnouncements } from '../../services/announcements.js'
+
+const DISMISSED_KEY = 'ocl:dismissed-announcements'
+function getDismissedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]')) } catch { return new Set() }
+}
+
+const ANNC_LABEL = { alert: '긴급', event: '이벤트', update: '업데이트', notice: '공지' }
+const ANNC_COLOR = {
+  alert: 'text-red-600 bg-red-50',
+  event: 'text-purple-600 bg-purple-50',
+  update: 'text-blue-500 bg-blue-50',
+  notice: 'text-amber-600 bg-amber-50',
+}
 
 // menuRef, menuOpen are kept for potential future use but dropdown is removed
 
@@ -25,6 +39,7 @@ function MyPage() {
   const [myPosts, setMyPosts] = useState([])
   const [friendStats, setFriendStats] = useState({ friends: 0, pendingApprovals: 0, outgoingApprovals: 0 })
   const [approvalNotifications, setApprovalNotifications] = useState([])
+  const [announcements, setAnnouncements] = useState([])
 
   const displayId =
     profile?.id || firebaseUser?.email?.split('@')[0] || firebaseUser?.uid?.slice(0, 8) || '—'
@@ -36,11 +51,14 @@ function MyPage() {
       getPostsByOwner(profile.uid, profile),
       getUserFriendStats(profile.uid),
       getFriendApprovalNotifications(profile.uid),
-    ]).then(([posts, stats, notifs]) => {
+      getRecentAnnouncements(5),
+    ]).then(([posts, stats, notifs, anncs]) => {
       if (!cancelled) {
         setMyPosts(posts)
         setFriendStats(stats)
         setApprovalNotifications(notifs)
+        const dismissed = getDismissedSet()
+        setAnnouncements(anncs.filter((a) => !dismissed.has(a.id)))
       }
     })
     return () => { cancelled = true }
@@ -167,9 +185,9 @@ function MyPage() {
           className={`profile-tab-button relative ${tab === 'notifications' ? 'profile-tab-button-active' : ''}`}
         >
           <span className="inline-flex items-center gap-1.5"><BellIcon className="w-4 h-4" />알림</span>
-          {approvalNotifications.length > 0 && (
+          {(approvalNotifications.length + announcements.length) > 0 && (
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-black text-[9px] font-black text-white">
-              {approvalNotifications.length > 9 ? '9+' : approvalNotifications.length}
+              {(approvalNotifications.length + announcements.length) > 9 ? '9+' : (approvalNotifications.length + announcements.length)}
             </span>
           )}
         </button>
@@ -184,12 +202,26 @@ function MyPage() {
       )}
 
       {tab === 'notifications' && (
-        approvalNotifications.length === 0 ? (
+        approvalNotifications.length === 0 && announcements.length === 0 ? (
           <div className="neo-card px-6 py-8 text-center text-[13px] font-medium text-mono-500">
             새로운 알림이 없습니다.
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
+            {/* 공지 알림 */}
+            {announcements.map((a) => (
+              <div key={a.id} className="neo-card flex flex-col gap-2 px-4 py-4 sm:px-5">
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${ANNC_COLOR[a.type] || ANNC_COLOR.notice}`}>
+                    {ANNC_LABEL[a.type] || '공지'}
+                  </span>
+                  <p className="text-[13px] font-black text-ink">{a.title}</p>
+                </div>
+                <p className="line-clamp-2 text-[12px] font-medium leading-relaxed text-mono-500">{a.body}</p>
+              </div>
+            ))}
+
+            {/* 친구 요청 알림 */}
             {approvalNotifications.map((item) => (
               <div key={item.id} className="neo-card flex flex-col gap-3 px-4 py-4 sm:px-5">
                 <p className="text-[13px] font-medium leading-[1.65] text-ink">

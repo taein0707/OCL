@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    match /announcements/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /warnings/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.authorUid) || isAdmin();
+    }
+    match /class_posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.authorUid) || isAdmin();
+    }
+    match /comments/{commentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.authorUid) || isAdmin();
+    }
+    match /vibes/{vibeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+    match /inquiries/{inquiryId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+    // 약관 업로드를 위해 임시로 전체 공개 쓰기 허용
+    match /terms/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /user_logs/{logId} {
+      allow create: if isSignedIn();
+      allow read, delete: if isAdmin();
+    }
+    match /friendRequests/{docId} { allow read, write: if isSignedIn(); }
+    match /relationships/{docId} { allow read, write: if isSignedIn(); }
+    match /{document=**} { allow read, write: if isAdmin(); }
+  }
+}

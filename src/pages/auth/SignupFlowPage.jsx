@@ -52,8 +52,20 @@ function SignupFlowPage() {
   const [schoolResults, setSchoolResults] = useState([])
   const [schoolSearching, setSchoolSearching] = useState(false)
   const [termsAgreed, setTermsAgreed] = useState(false)
-  const [termsContent, setTermsContent] = useState('')
+  const [privacyAgreed, setPrivacyAgreed] = useState(false)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
+  const [tosExpanded, setTosExpanded] = useState(false)
+  const [ppExpanded, setPpExpanded] = useState(false)
+  const [termsOfService, setTermsOfService] = useState('')
+  const [privacyPolicy, setPrivacyPolicy] = useState('')
   const [termsLoading, setTermsLoading] = useState(false)
+
+  const allTermsAgreed = termsAgreed && privacyAgreed && ageConfirmed
+  const handleAllAgree = (checked) => {
+    setTermsAgreed(checked)
+    setPrivacyAgreed(checked)
+    setAgeConfirmed(checked)
+  }
 
   useEffect(() => {
     if (!db) return
@@ -62,8 +74,9 @@ function SignupFlowPage() {
       .then((snap) => {
         if (snap.exists()) {
           const data = snap.data()
-          const raw = data.content || data.text || JSON.stringify(data, null, 2)
-          setTermsContent(raw.replace(/\\n/g, '\n'))
+          const clean = (v) => (typeof v === 'string' ? v : '').replace(/\\n/g, '\n')
+          setTermsOfService(clean(data.termsOfService || data.content || data.text))
+          setPrivacyPolicy(clean(data.privacyPolicy || ''))
         }
       })
       .catch(() => {})
@@ -246,33 +259,107 @@ function SignupFlowPage() {
 
             {step === 'terms' && (
               <>
-                <div className="flex flex-col gap-2 max-w-md">
+                <div className="flex flex-col gap-1.5 max-w-md">
                   <span className="text-[11px] font-black tracking-[0.18em] text-mono-500">약관 동의</span>
-                  <h2 className="sys-text text-3xl font-black text-ink">개인정보 수집 및 이용 동의</h2>
-                  <p className="text-sm font-semibold text-mono-500">서비스 이용 전 약관에 동의해 주세요.</p>
+                  <h2 className="sys-text text-3xl font-black text-ink">서비스 이용에 동의해 주세요</h2>
                 </div>
-                <div className="neo-card max-h-56 overflow-y-auto p-4">
-                  {termsLoading ? (
-                    <p className="text-sm font-semibold text-mono-500">약관을 불러오는 중입니다...</p>
-                  ) : termsContent ? (
-                    <pre className="whitespace-pre-wrap text-[12px] font-medium leading-[1.7] text-mono-600">{termsContent}</pre>
-                  ) : (
-                    <p className="text-sm font-semibold text-mono-500">약관을 불러오지 못했습니다. 계속 진행하시면 기본 약관에 동의한 것으로 간주됩니다.</p>
-                  )}
-                </div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termsAgreed}
-                    onChange={(e) => setTermsAgreed(e.target.checked)}
-                    className="h-5 w-5 rounded accent-[var(--accent)]"
-                  />
-                  <span className="text-sm font-black text-ink">위 내용에 동의합니다</span>
-                </label>
+
+                {termsLoading ? (
+                  <p className="text-sm font-semibold text-mono-500">약관을 불러오는 중입니다…</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {/* 모두 동의 */}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-[var(--accent)] bg-[var(--accent)]/5 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={allTermsAgreed}
+                        onChange={(e) => handleAllAgree(e.target.checked)}
+                        className="h-5 w-5 shrink-0 rounded accent-[var(--accent)]"
+                      />
+                      <span className="text-sm font-black text-ink">아래 약관에 모두 동의합니다</span>
+                    </label>
+
+                    <div className="h-px bg-mono-200" />
+
+                    {/* 이용약관 */}
+                    <div className="rounded-2xl border border-mono-200 overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <label className="flex flex-1 cursor-pointer items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={termsAgreed}
+                            onChange={(e) => setTermsAgreed(e.target.checked)}
+                            className="h-4 w-4 shrink-0 rounded accent-[var(--accent)]"
+                          />
+                          <span className="text-sm font-semibold text-ink">이용약관 동의 <span className="text-mono-400 font-medium">(필수)</span></span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setTosExpanded((v) => !v)}
+                          className="shrink-0 text-[11px] font-black text-mono-400 hover:text-ink transition"
+                        >
+                          {tosExpanded ? '접기' : '전문 보기'}
+                        </button>
+                      </div>
+                      {tosExpanded && (
+                        <div className="max-h-48 overflow-y-auto border-t border-mono-200 bg-mono-50/60 px-4 py-3">
+                          {termsOfService ? (
+                            <pre className="whitespace-pre-wrap text-[11px] font-medium leading-[1.7] text-mono-600">{termsOfService}</pre>
+                          ) : (
+                            <p className="text-[12px] text-mono-400">약관을 불러오지 못했습니다.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 개인정보 처리방침 */}
+                    <div className="rounded-2xl border border-mono-200 overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <label className="flex flex-1 cursor-pointer items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={privacyAgreed}
+                            onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                            className="h-4 w-4 shrink-0 rounded accent-[var(--accent)]"
+                          />
+                          <span className="text-sm font-semibold text-ink">개인정보 처리방침 동의 <span className="text-mono-400 font-medium">(필수)</span></span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setPpExpanded((v) => !v)}
+                          className="shrink-0 text-[11px] font-black text-mono-400 hover:text-ink transition"
+                        >
+                          {ppExpanded ? '접기' : '전문 보기'}
+                        </button>
+                      </div>
+                      {ppExpanded && (
+                        <div className="max-h-48 overflow-y-auto border-t border-mono-200 bg-mono-50/60 px-4 py-3">
+                          {privacyPolicy ? (
+                            <pre className="whitespace-pre-wrap text-[11px] font-medium leading-[1.7] text-mono-600">{privacyPolicy}</pre>
+                          ) : (
+                            <p className="text-[12px] text-mono-400">약관을 불러오지 못했습니다.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 만 14세 이상 */}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-mono-200 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={ageConfirmed}
+                        onChange={(e) => setAgeConfirmed(e.target.checked)}
+                        className="h-4 w-4 shrink-0 rounded accent-[var(--accent)]"
+                      />
+                      <span className="text-sm font-semibold text-ink">만 14세 이상이거나 보호자의 동의를 받았습니다.</span>
+                    </label>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   className="neo-btn w-full sm:w-auto sm:self-end"
-                  disabled={!termsAgreed}
+                  disabled={!allTermsAgreed}
                   onClick={next}
                 >
                   동의하고 시작하기
@@ -357,19 +444,12 @@ function SignupFlowPage() {
                     disabled={!form.school}
                     onClick={() => runWithRecovery(async () => {
                       const s = form.school
-                      const cleanSchool = s ? { id: String(s.id || ''), name: String(s.name || ''), address: String(s.address || ''), type: String(s.type || ''), eduCode: String(s.eduCode || '') } : null
-                      await updateProfile({ school: cleanSchool, grade: form.grade, classNum: form.classNum })
+                      const cleanSchool = { id: String(s.id || ''), name: String(s.name || ''), address: String(s.address || ''), type: String(s.type || ''), eduCode: String(s.eduCode || '') }
+                      await updateProfile({ school: cleanSchool })
                       next()
                     })}
                   >
                     다음
-                  </button>
-                  <button
-                    type="button"
-                    className="neo-btn-outline w-full sm:w-auto sm:self-end"
-                    onClick={() => { setForm((f) => ({ ...f, school: null })); next() }}
-                  >
-                    건너뛰기
                   </button>
                 </div>
               </>
@@ -420,7 +500,14 @@ function SignupFlowPage() {
                     </button>
                   ))}
                 </div>
-                <button type="button" className="neo-btn w-full sm:w-auto sm:self-end" onClick={next}>
+                <button
+                  type="button"
+                  className="neo-btn w-full sm:w-auto sm:self-end"
+                  onClick={() => runWithRecovery(async () => {
+                    await updateProfile({ grade: form.grade, classNum: form.classNum })
+                    next()
+                  })}
+                >
                   다음
                 </button>
               </>

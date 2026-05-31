@@ -5,6 +5,7 @@ import MainTabBar from '../components/MainTabBar.jsx'
 import DesktopSidebar from '../components/DesktopSidebar.jsx'
 import PermissionFlowGate from '../components/permissions/PermissionFlowGate.jsx'
 import AnnouncementBanner from '../components/AnnouncementBanner.jsx'
+import WarningPopup from '../components/WarningPopup.jsx'
 
 function MainLayout() {
   const location = useLocation()
@@ -31,7 +32,6 @@ function MainLayout() {
             <Logo size="md" />
           </header>
 
-          <AnnouncementBanner />
           <main className="flex-1 px-4 py-6 pb-10 sm:px-5 md:px-6 md:py-6">
             <Outlet />
           </main>
@@ -40,6 +40,8 @@ function MainLayout() {
 
       <MainTabBar />
       <PermissionFlowGate />
+      <AnnouncementBanner />
+      <WarningPopup />
     </div>
   )
 }

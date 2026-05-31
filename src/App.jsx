@@ -62,7 +62,6 @@ function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users/:userId" element={<ProfilePage />} />
         <Route path="post/:postId" element={<PostDetailPage />} />
-        <Route path="support" element={<SupportPage />} />
       </Route>
 
       {/* Public routes — accessible without auth (banned users need support) */}
