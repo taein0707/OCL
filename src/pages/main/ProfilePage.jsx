@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import ProfileHeader from '../../components/profile/ProfileHeader.jsx'
@@ -23,7 +23,9 @@ function ProfilePage() {
   const [profileLoaded, setProfileLoaded] = useState(false)
   const [relationshipState, setRelationshipState] = useState({ status: 'none', relationship: null })
   const [friendStats, setFriendStats] = useState({ friends: 0, pendingApprovals: 0, outgoingApprovals: 0 })
-  const [postsVersion, setPostsVersion] = useState(0)
+  const [visiblePosts, setVisiblePosts] = useState([])
+  const [fallbackUser, setFallbackUser] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     if (!userId) return
@@ -44,44 +46,56 @@ function ProfilePage() {
       .catch(() => {
         if (!cancelled) setProfileLoaded(true)
       })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [firebaseUser?.uid, navigate, userId])
 
   useEffect(() => {
     if (!userId) return
-    setRelationshipState(getRelationshipState(firebaseUser?.uid, userId))
-    setFriendStats(getUserFriendStats(userId))
-  }, [firebaseUser?.uid, postsVersion, userId])
+    let cancelled = false
+    getCommunityUserById(userId).then((data) => {
+      if (!cancelled) setFallbackUser(data)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [userId])
 
-  const fallbackUser = useMemo(
-    () => getCommunityUserById(userId, profile),
-    [profile, userId, postsVersion],
-  )
-  const resolvedProfile = useMemo(
-    () => ({
-      ...(fallbackUser || {}),
-      ...(remoteProfile || {}),
-      school: remoteProfile?.school || fallbackUser?.school,
-      schoolName: remoteProfile?.school?.name || fallbackUser?.schoolName,
-      region:
-        remoteProfile?.school?.address?.split(' ').slice(0, 2).join(' ') ||
-        fallbackUser?.region ||
-        '',
-    }),
-    [fallbackUser, remoteProfile],
-  )
-  const visiblePosts = useMemo(
-    () => getPostsForProfileView(userId, firebaseUser?.uid, profile),
-    [firebaseUser?.uid, profile, postsVersion, userId],
-  )
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    Promise.all([
+      getRelationshipState(firebaseUser?.uid, userId),
+      getUserFriendStats(userId),
+    ]).then(([rel, stats]) => {
+      if (!cancelled) {
+        setRelationshipState(rel)
+        setFriendStats(stats)
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [firebaseUser?.uid, userId, refreshKey])
 
-  const refreshRelationship = () => {
-    setRelationshipState(getRelationshipState(firebaseUser?.uid, userId))
-    setFriendStats(getUserFriendStats(userId))
-    setPostsVersion((prev) => prev + 1)
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    getPostsForProfileView(userId, firebaseUser?.uid, profile).then((posts) => {
+      if (!cancelled) setVisiblePosts(posts)
+    }).catch(() => {
+      if (!cancelled) setVisiblePosts([])
+    })
+    return () => { cancelled = true }
+  }, [firebaseUser?.uid, profile, userId, refreshKey])
+
+  const resolvedProfile = {
+    ...(fallbackUser || {}),
+    ...(remoteProfile || {}),
+    school: remoteProfile?.school || fallbackUser?.school,
+    schoolName: remoteProfile?.school?.name || fallbackUser?.schoolName,
+    region:
+      remoteProfile?.school?.address?.split(' ').slice(0, 2).join(' ') ||
+      fallbackUser?.region ||
+      '',
   }
+
+  const refreshRelationship = () => setRefreshKey((prev) => prev + 1)
 
   if (!resolvedProfile?.nickname) {
     return (
@@ -94,7 +108,9 @@ function ProfilePage() {
           >
             뒤로
           </button>
-          <p className="text-sm font-semibold text-mono-500">프로필을 불러오는 중입니다.</p>
+          <p className="text-sm font-semibold text-mono-500">
+            {profileLoaded ? '프로필을 찾을 수 없습니다.' : '프로필을 불러오는 중입니다.'}
+          </p>
         </div>
       </div>
     )
